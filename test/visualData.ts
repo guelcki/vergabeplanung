@@ -180,14 +180,6 @@ export class VisualData extends TestDataViewBuilder {
         let categoriesColumns: TestDataViewBuilderCategoryColumnOptions[] = [
             {
                 source: {
-                    displayName: VisualData.ColumnType,
-                    type: ValueType.fromDescriptor({text: true}),
-                    roles: {[GanttRole.Legend]: true}
-                },
-                values: this.valuesTaskTypeResource.map(x => x[0])
-            },
-            {
-                source: {
                     displayName: VisualData.ColumnTask,
                     type: ValueType.fromDescriptor({text: true}),
                     roles: {[GanttRole.Task]: true}

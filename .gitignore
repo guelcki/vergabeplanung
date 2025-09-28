@@ -9,6 +9,7 @@ dist/
 .tmp/
 coverage/
 debug/
+scripts/
 webpack.statistics*.html
 
 # Logs

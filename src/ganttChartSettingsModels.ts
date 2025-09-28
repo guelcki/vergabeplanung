@@ -30,21 +30,15 @@
 
 import powerbiVisualsApi from "powerbi-visuals-api";
 import {formattingSettings} from "powerbi-visuals-utils-formattingmodel";
-import {legendInterfaces} from "powerbi-visuals-utils-chartutils";
-import {LegendDataPoint} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
-import {ColorHelper} from "powerbi-visuals-utils-colorutils";
 import {MilestoneShape} from "./enums";
 import {DateType} from "./enums";
 import {ResourceLabelPosition} from "./enums";
 import {DurationUnit} from "./enums";
-import ISelectionId = powerbiVisualsApi.visuals.ISelectionId;
-import LegendPosition = legendInterfaces.LegendPosition;
 
 import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 
 import Card = formattingSettings.SimpleCard;
 import Model = formattingSettings.Model;
-import FormattingSettingsSlice = formattingSettings.SimpleSlice;
 
 import IEnumMember = powerbi.IEnumMember;
 import {Day} from "./enums";
@@ -83,17 +77,6 @@ const shapesOptions : IEnumMember[] = [
     { displayName: "Visual_Shape_Circle", value: MilestoneShape.Circle },
     { displayName: "Visual_Shape_Square", value: MilestoneShape.Square }
 ]
-
-const positionOptions : IEnumMember[] = [
-    { displayName: "Visual_Position_Top", value: LegendPosition[LegendPosition.Top] },
-    { displayName: "Visual_Position_Bottom", value: LegendPosition[LegendPosition.Bottom] },
-    { displayName: "Visual_Position_Left", value: LegendPosition[LegendPosition.Left] },
-    { displayName: "Visual_Position_Right", value: LegendPosition[LegendPosition.Right] },
-    { displayName: "Visual_Position_TopCenter", value: LegendPosition[LegendPosition.TopCenter] },
-    { displayName: "Visual_Position_BottomCenter", value: LegendPosition[LegendPosition.BottomCenter] },
-    { displayName: "Visual_Position_LeftCenter", value: LegendPosition[LegendPosition.LeftCenter] },
-    { displayName: "Visual_Position_RightCenter", value: LegendPosition[LegendPosition.RightCenter] },
-];
 
 const resourcePositionOptions : IEnumMember[] = [
     { displayName: "Visual_Position_Top", value: ResourceLabelPosition.Top },
@@ -174,12 +157,6 @@ export class GeneralCardSettings extends Card {
 
 export class SubTasksCardSettings extends Card {
 
-    inheritParentLegend = new formattingSettings.ToggleSwitch({
-        name: "inheritParentLegend",
-        displayNameKey: "Visual_InheritParentLegend",
-        value: true
-    });
-
     parentDurationByChildren = new formattingSettings.ToggleSwitch({
         name: "parentDurationByChildren",
         displayNameKey: "Visual_ParentDurationByChildren",
@@ -194,7 +171,7 @@ export class SubTasksCardSettings extends Card {
 
     name: string = "subTasks";
     displayNameKey: string = "Visual_SubTasks";
-    slices = [this.inheritParentLegend, this.parentDurationByChildren, this.parentCompletionByChildren];
+    slices = [this.parentDurationByChildren, this.parentCompletionByChildren];
 }
 
 export class CollapsedTasksCardSettings extends Card {
@@ -252,64 +229,6 @@ export class DaysOffCardSettings extends Card {
     displayNameKey: string = "Visual_DaysOff";
     slices = [this.fill, this.firstDayOfWeek];
     topLevelSlice?: formattingSettings.SimpleSlice<any> = this.show;
-}
-
-export class LegendCardSettings extends Card {
-    show = new formattingSettings.ToggleSwitch({
-        name: "show",
-        displayNameKey: "Visual_Show",
-        value: true
-    });
-
-    topLevelSlice = this.show;
-
-    position = new formattingSettings.ItemDropdown({
-        name: "position",
-        displayNameKey: "Visual_Position",
-        items: positionOptions,
-        value: positionOptions[3]
-    });
-
-    showTitle = new formattingSettings.ToggleSwitch({
-        name: "showTitle",
-        displayNameKey: "Visual_Title",
-        value: true
-    });
-
-    titleText = new formattingSettings.TextInput({
-        name: "titleText",
-        displayNameKey: "Visual_LegendName",
-        placeholder: "",
-        value: ""
-    });
-
-    labelColor = new formattingSettings.ColorPicker({
-        name: "labelColor",
-        displayNameKey: "Visual_Color",
-        value: { value: "#000000" }
-    });
-
-    fontSize = new formattingSettings.NumUpDown({
-        name: "fontSize",
-        displayNameKey: "Visual_TextSize",
-        value: FontSizeSettings.MinFontSize,
-        options: {
-            minValue: {
-                type: powerbiVisualsApi.visuals.ValidatorType.Min,
-                value: FontSizeSettings.MinFontSize,
-            },
-        }
-    });
-
-    name: string = "legend";
-    displayNameKey: string = "Visual_Legend";
-    slices: FormattingSettingsSlice[] = [
-        this.position,
-        this.showTitle,
-        this.titleText,
-        this.labelColor,
-        this.fontSize,
-    ];
 }
 
 export class MilestonesCardSettings extends Card {
@@ -543,7 +462,6 @@ export class GanttChartSettingsModel extends Model {
     collapsedTasksCardSettings = new CollapsedTasksCardSettings();
     collapsedTasksUpdateIdCardSettings = new CollapsedTasksUpdateIdCardSettings();
     daysOffCardSettings = new DaysOffCardSettings();
-    legendCardSettings = new LegendCardSettings();
     milestonesCardSettings = new MilestonesCardSettings();
     taskLabelsCardSettings = new TaskLabelsCardSettings();
     taskCompletionCardSettings = new TaskCompletionCardSettings();
@@ -552,45 +470,18 @@ export class GanttChartSettingsModel extends Model {
     taskResourceCardSettings = new TaskResourceCardSettings();
     dateTypeCardSettings = new DateTypeCardSettings();
     
-    cards = [this.generalCardSettings, this.collapsedTasksCardSettings, this.collapsedTasksUpdateIdCardSettings, this.daysOffCardSettings, this.legendCardSettings, 
-            this.milestonesCardSettings, this.taskLabelsCardSettings, this.taskCompletionCardSettings, 
+    cards = [this.generalCardSettings, this.collapsedTasksCardSettings, this.collapsedTasksUpdateIdCardSettings, this.daysOffCardSettings,
+            this.milestonesCardSettings, this.taskLabelsCardSettings, this.taskCompletionCardSettings,
             this.tooltipConfigCardSettings, this.taskConfigCardSettings, this.taskResourceCardSettings, this.dateTypeCardSettings];
 
-    
+
     setLocalizedOptions(localizationManager: ILocalizationManager) {
         this.setLocalizedDisplayName(durationUnitsOptions, localizationManager);
         this.setLocalizedDisplayName(dayOfWeekOptions, localizationManager);
-        this.setLocalizedDisplayName(positionOptions, localizationManager);
         this.setLocalizedDisplayName(shapesOptions, localizationManager);
         this.setLocalizedDisplayName(resourcePositionOptions, localizationManager);
         this.setLocalizedDisplayName(dateTypeOptions, localizationManager);
     }       
-
-    public populateLegend(dataPoints: LegendDataPoint[], localizationManager: ILocalizationManager) {
-        const newSlices: FormattingSettingsSlice[] = [
-            this.legendCardSettings.position,
-            this.legendCardSettings.showTitle,
-            this.legendCardSettings.titleText,
-            this.legendCardSettings.labelColor,
-            this.legendCardSettings.fontSize,
-        ];
-
-        if (!dataPoints || dataPoints.length === 0) {
-            this.legendCardSettings.slices = newSlices;
-            return;
-        }
-
-        for (const dataPoint of dataPoints) {
-            newSlices.push(new formattingSettings.ColorPicker({
-                name: "fill",
-                displayName: dataPoint.label || localizationManager.getDisplayName("Visual_LegendColor"),
-                selector: ColorHelper.normalizeSelector((<ISelectionId>dataPoint.identity).getSelector(), false),
-                value: { value: dataPoint.color }
-            }));
-        }
-
-        this.legendCardSettings.slices = newSlices;
-    }
 
     public setLocalizedDisplayName(options: IEnumMember[], localizationManager: ILocalizationManager) {
         options.forEach(option => {

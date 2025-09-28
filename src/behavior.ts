@@ -54,7 +54,6 @@ export function getFillOpacity(
 export interface BehaviorOptions extends IBehaviorOptions<Task> {
     clearCatcher: Selection<any>;
     taskSelection: Selection<Task>;
-    legendSelection: Selection<any>;
     interactivityService: IInteractivityService<Task>;
     subTasksCollapse: {
         selection: Selection<any>;
@@ -81,23 +80,6 @@ export class Behavior implements IInteractiveBehavior {
             selectionHandler.handleSelection(dataPoint, event.ctrlKey || event.metaKey);
 
             event.stopPropagation();
-        });
-
-        options.legendSelection.on("click", (event: MouseEvent, d: any) => {
-            if (d.selected) {
-                selectionHandler.handleClearSelection();
-                return;
-            }
-
-            selectionHandler.handleSelection(d, event.ctrlKey || event.metaKey);
-            event.stopPropagation();
-
-            const selectedType: string = d.tooltipInfo;
-            options.taskSelection.each((d: Task) => {
-                if (d.taskType === selectedType && d.parent && !d.selected) {
-                    selectionHandler.handleSelection(d, event.ctrlKey || event.metaKey);
-                }
-            });
         });
 
         options.subTasksCollapse.selection.on("click", (event: MouseEvent, d: GroupedTask) => {
@@ -142,19 +124,6 @@ export class Behavior implements IInteractiveBehavior {
             if (event) {
                 this.selectionHandler.handleContextMenu(
                     task,
-                    {
-                        x: event.clientX,
-                        y: event.clientY
-                    });
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-
-        this.options.legendSelection.on("contextmenu", (event: MouseEvent, legend: any) => {
-            if (event) {
-                this.selectionHandler.handleContextMenu(
-                    legend,
                     {
                         x: event.clientX,
                         y: event.clientY

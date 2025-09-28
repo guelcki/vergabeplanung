@@ -44,7 +44,6 @@ export enum ResourceLabelPosition {
 }
 
 export enum GanttRole {
-    Legend = "Legend",
     Task = "Task",
     Parent = "Parent",
     StartDate = "StartDate",

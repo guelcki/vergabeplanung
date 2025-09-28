@@ -1,12 +1,6 @@
 {
     "dataRoles": [
         {
-            "name": "Legend",
-            "displayName": "Legend",
-            "displayNameKey": "Role_Legend",
-            "kind": "Grouping"
-        },
-        {
             "name": "Task",
             "displayName": "System",
             "kind": "Grouping"
@@ -76,10 +70,6 @@
         {
             "conditions": [
                 {
-                    "Legend": {
-                        "min": 0,
-                        "max": 1
-                    },
                     "Task": {
                         "min": 1,
                         "max": 1
@@ -118,10 +108,6 @@
                     }
                 },
                 {
-                    "Legend": {
-                        "min": 0,
-                        "max": 1
-                    },
                     "Task": {
                         "min": 1,
                         "max": 1
@@ -160,10 +146,6 @@
                     }
                 },
                 {
-                    "Legend": {
-                        "min": 0,
-                        "max": 1
-                    },
                     "Task": {
                         "min": 0,
                         "max": 1
@@ -202,10 +184,6 @@
                     }
                 },
                 {
-                    "Legend": {
-                        "min": 0,
-                        "max": 1
-                    },
                     "Task": {
                         "min": 0,
                         "max": 1
@@ -280,26 +258,23 @@
                     ]
                 },
                 "values": {
-                    "group": {
-                        "by": "Legend",
-                        "select": [
-                            {
-                                "for": {
-                                    "in": "EndDate"
-                                }
-                            },
-                            {
-                                "for": {
-                                    "in": "Duration"
-                                }
-                            },
-                            {
-                                "for": {
-                                    "in": "Completion"
-                                }
+                    "select": [
+                        {
+                            "for": {
+                                "in": "EndDate"
                             }
-                        ]
-                    }
+                        },
+                        {
+                            "for": {
+                                "in": "Duration"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "Completion"
+                            }
+                        }
+                    ]
                 }
             }
         }
@@ -341,11 +316,6 @@
         },
         "subTasks": {
             "properties": {
-                "inheritParentLegend": {
-                    "type": {
-                        "bool": true
-                    }
-                },
                 "parentDurationByChildren": {
                     "type": {
                         "bool": true
@@ -399,28 +369,16 @@
                 }
             }
         },
-        "legend": {
+        "milestones": {
             "properties": {
-                "show": {
+                "fill": {
                     "type": {
-                        "bool": true
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
                     }
-                },
-                "position": {
-                    "type": {
-                        "text": true
-                    }
-                },
-                "showTitle": {
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "titleText": {
-                    "type": {
-                        "text": true
-                    },
-                    "suppressFormatPainterCopy": true
                 },
                 "labelColor": {
                     "type": {
@@ -431,32 +389,10 @@
                         }
                     }
                 },
-                "fontSize": {
+                "labelFontSize": {
                     "type": {
                         "formatting": {
                             "fontSize": true
-                        }
-                    }
-                },
-                "fill": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "milestones": {
-            "properties": {
-                "fill": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
                         }
                     }
                 },

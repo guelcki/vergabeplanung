@@ -79,14 +79,11 @@ import {
 // powerbi.extensibility.utils.color
 import {ColorHelper} from "powerbi-visuals-utils-colorutils";
 
-// powerbi.extensibility.utils.chart.legend
+// powerbi.extensibility.utils.chart
 import {
     axis as AxisHelper,
     axisInterfaces,
-    axisScale,
-    legend as LegendModule,
-    legendInterfaces,
-    OpacityLegendBehavior
+    axisScale
 } from "powerbi-visuals-utils-chartutils";
 
 // behavior
@@ -172,15 +169,8 @@ import ValueType = valueType.ValueType;
 import IValueFormatter = ValueFormatter.IValueFormatter;
 // powerbi.extensibility.utils.interactivity
 import appendClearCatcher = interactivityService.appendClearCatcher;
-import IInteractiveBehavior = interactivityService.IInteractiveBehavior;
 import IInteractivityService = interactivityService.IInteractivityService;
 import createInteractivityService = interactivitySelectionService.createInteractivitySelectionService;
-// powerbi.extensibility.utils.chart.legend
-import ILegend = legendInterfaces.ILegend;
-import LegendPosition = legendInterfaces.LegendPosition;
-import LegendData = legendInterfaces.LegendData;
-import createLegend = LegendModule.createLegend;
-import LegendDataPoint = legendInterfaces.LegendDataPoint;
 // powerbi.extensibility.utils.chart
 import IAxisProperties = axisInterfaces.IAxisProperties;
 
@@ -237,23 +227,15 @@ export class Gantt implements IVisual {
     private static CollapseAll: ClassAndSelector = createClassAndSelector("collapse-all");
     private static CollapseAllArrow: ClassAndSelector = createClassAndSelector("collapse-all-arrow");
     private static Label: ClassAndSelector = createClassAndSelector("label");
-    private static LegendItems: ClassAndSelector = createClassAndSelector("legendItem");
-    private static LegendTitle: ClassAndSelector = createClassAndSelector("legendTitle");
     private static ClickableArea: ClassAndSelector = createClassAndSelector("clickableArea");
 
     private viewport: IViewport;
     private colors: IColorPalette;
     private colorHelper: ColorHelper;
-    private legend: ILegend;
 
     private textProperties: TextProperties = {
         fontFamily: "wf_segoe-ui_normal",
         fontSize: PixelConverter.toString(9),
-    };
-
-    private static LegendPropertyIdentifier: DataViewObjectPropertyIdentifier = {
-        objectName: "legend",
-        propertyName: "fill"
     };
 
     private static MilestonesPropertyIdentifier: DataViewObjectPropertyIdentifier = {
@@ -274,6 +256,11 @@ export class Gantt implements IVisual {
     private static CollapsedTasksUpdateIdPropertyIdentifier: DataViewObjectPropertyIdentifier = {
         objectName: "collapsedTasksUpdateId",
         propertyName: "value"
+    };
+
+    private static TaskConfigPropertyIdentifier: DataViewObjectPropertyIdentifier = {
+        objectName: "taskConfig",
+        propertyName: "fill"
     };
 
     public static DefaultValues = {
@@ -366,7 +353,7 @@ export class Gantt implements IVisual {
     private clearCatcher: Selection<any>;
     private ganttDiv: Selection<any>;
     private behavior: Behavior;
-    private interactivityService: IInteractivityService<Task | LegendDataPoint>;
+    private interactivityService: IInteractivityService<Task>;
     private eventService: IVisualEventService;
     private tooltipServiceWrapper: ITooltipServiceWrapper;
     private host: IVisualHost;
@@ -464,16 +451,6 @@ export class Gantt implements IVisual {
             .append("g")
             .classed(Gantt.CollapseAll.className, true);
 
-        // create legend container
-        const interactiveBehavior: IInteractiveBehavior = this.colorHelper.isHighContrast ? new OpacityLegendBehavior() : null;
-        this.legend = createLegend(
-            element,
-            this.isInteractiveChart,
-            this.interactivityService,
-            true,
-            LegendPosition.Top,
-            interactiveBehavior);
-
         this.ganttDiv.on("scroll", (event) => {
             if (this.viewModel) {
                 const taskLabelsWidth: number = this.viewModel.settings.taskLabelsCardSettings.show.value
@@ -499,14 +476,6 @@ export class Gantt implements IVisual {
         this.ganttDiv
             .style("height", 0)
             .style("width", 0);
-
-        this.body
-            .selectAll(Gantt.LegendItems.selectorName)
-            .remove();
-
-        this.body
-            .selectAll(Gantt.LegendTitle.selectorName)
-            .remove();
 
         this.axisGroup
             .selectAll(Gantt.AxisTick.selectorName)
@@ -570,23 +539,15 @@ export class Gantt implements IVisual {
      * @param durationUnit Duration unit option
      * @param localizationManager powerbi localization manager
      * @param isEndDateFilled if end date is filled
-     * @param roleLegendText customized legend name
      */
     public static getTooltipInfo(
         task: Task,
         formatters: GanttChartFormatters,
         durationUnit: DurationUnit,
         localizationManager: ILocalizationManager,
-        isEndDateFilled: boolean,
-        roleLegendText?: string): VisualTooltipDataItem[] {
+        isEndDateFilled: boolean): VisualTooltipDataItem[] {
 
         const tooltipDataArray: VisualTooltipDataItem[] = [];
-        if (task.taskType) {
-            tooltipDataArray.push({
-                displayName: roleLegendText || localizationManager.getDisplayName("Role_Legend"),
-                value: task.taskType
-            });
-        }
 
         tooltipDataArray.push({
             displayName: localizationManager.getDisplayName("Role_Task"),
@@ -715,43 +676,6 @@ export class Gantt implements IVisual {
             startDateFormatter: ValueFormatter.create({ format: dateFormat, cultureSelector }),
             completionFormatter: ValueFormatter.create({ format: PercentFormat, value: 1, allowFormatBeautification: true })
         };
-    }
-
-    private static createLegend(
-        host: IVisualHost,
-        colorPalette: IColorPalette,
-        settings: GanttChartSettingsModel,
-        taskTypes: TaskTypes,
-        useDefaultColor: boolean): LegendData {
-
-        const colorHelper = new ColorHelper(colorPalette, Gantt.LegendPropertyIdentifier);
-        const legendData: LegendData = {
-            fontSize: settings.legendCardSettings.fontSize.value,
-            dataPoints: [],
-            title: settings.legendCardSettings.showTitle.value ? (settings.legendCardSettings.titleText.value || taskTypes?.typeName) : null,
-            labelColor: settings.legendCardSettings.labelColor.value.value
-        };
-
-        legendData.dataPoints = taskTypes?.types.map(
-            (typeMeta: TaskTypeMetadata): LegendDataPoint => {
-                let color: string = settings.taskConfigCardSettings.fill.value.value;
-
-
-                if (!useDefaultColor && !colorHelper.isHighContrast) {
-                    color = colorHelper.getColorForMeasure(typeMeta.columnGroup.objects, typeMeta.name);
-                }
-
-                return {
-                    label: typeMeta.name?.toString(),
-                    color: color,
-                    selected: false,
-                    identity: host.createSelectionIdBuilder()
-                        .withCategory(typeMeta.selectionColumn, 0)
-                        .createSelectionId()
-                };
-            });
-
-        return legendData;
     }
 
     private static getSortingOptions(dataView: DataView): SortingOptions {
@@ -947,7 +871,7 @@ export class Gantt implements IVisual {
             return tasks;
         }
 
-        const colorHelper: ColorHelper = new ColorHelper(colors, Gantt.LegendPropertyIdentifier);
+        const colorHelper: ColorHelper = new ColorHelper(colors, Gantt.TaskConfigPropertyIdentifier);
         const groupValues: GanttColumns<DataViewValueColumn>[] = GanttColumns.getGroupedValueColumns(dataView);
         const sortingOptions: SortingOptions = Gantt.getSortingOptions(dataView);
 
@@ -1058,7 +982,7 @@ export class Gantt implements IVisual {
     private static addTooltipInfoForCollapsedTasks(tasks: Task[], collapsedTasks: string[], formatters: GanttChartFormatters, durationUnit: DurationUnit, localizationManager: powerbi.extensibility.ILocalizationManager, isEndDateFilled: boolean, settings: GanttChartSettingsModel) {
         tasks.forEach((task: Task) => {
             if (!task.children || collapsedTasks.includes(task.name)) {
-                task.tooltipInfo = Gantt.getTooltipInfo(task, formatters, durationUnit, localizationManager, isEndDateFilled, settings.legendCardSettings.titleText.value);
+                task.tooltipInfo = Gantt.getTooltipInfo(task, formatters, durationUnit, localizationManager, isEndDateFilled);
                 if (task.Milestones) {
                     task.Milestones.forEach((milestone) => {
                         const milestoneDate: Date = milestone.start || task.start;
@@ -1150,13 +1074,12 @@ export class Gantt implements IVisual {
                 maxCompletionFromTasks = maxCompletionFromTasks > Gantt.CompletionMax ? Gantt.CompletionMaxInPercent : Gantt.CompletionMax;
 
                 if (group.Duration && group.Duration.values[index] !== null) {
-                    taskType =
-                        taskTypes.types.find((typeMeta: TaskTypeMetadata) => typeMeta.name === group.Duration.source.groupName);
+                    taskType = taskTypes?.types?.find((typeMeta: TaskTypeMetadata) => typeMeta.name === group.Duration.source.groupName);
 
-                        if (taskType) {
-                            selectionBuilder.withCategory(taskType.selectionColumn, 0);
-                            color = colorHelper.getColorForMeasure(taskType.columnGroup.objects, taskType.name);
-                        }
+                    if (taskType) {
+                        selectionBuilder.withCategory(taskType.selectionColumn, 0);
+                        color = colorHelper.getColorForMeasure(taskType.columnGroup.objects, taskType.name);
+                    }
 
                     duration = (group.Duration.values[index] as number > settings.generalCardSettings.durationMin.value) ? group.Duration.values[index] as number : settings.generalCardSettings.durationMin.value;
 
@@ -1184,8 +1107,7 @@ export class Gantt implements IVisual {
                     }
 
                 } else if (group.EndDate && group.EndDate.values[index] !== null) {
-                    taskType =
-                        taskTypes.types.find((typeMeta: TaskTypeMetadata) => typeMeta.name === group.EndDate.source.groupName);
+                    taskType = taskTypes?.types?.find((typeMeta: TaskTypeMetadata) => typeMeta.name === group.EndDate.source.groupName);
 
                     if (taskType) {
                         selectionBuilder.withCategory(taskType.selectionColumn, 0);
@@ -1211,8 +1133,6 @@ export class Gantt implements IVisual {
                 }
             });
         }
-
-        color = Gantt.DefaultValues.TaskColor;
 
         return {
             duration,
@@ -1525,25 +1445,17 @@ export class Gantt implements IVisual {
             isParentFilled: boolean = dataView.metadata.columns.findIndex(col => Gantt.hasRole(col, GanttRole.Parent)) !== -1,
             isResourcesFilled: boolean = dataView.metadata.columns.findIndex(col => Gantt.hasRole(col, GanttRole.Resource)) !== -1;
 
-        const legendData: LegendData = Gantt.createLegend(host, colors, settings, taskTypes, !isDurationFilled && !isEndDateFilled);
         const milestonesData: MilestoneData = Gantt.createMilestones(dataView, host);
 
-        const taskColor: string = (legendData.dataPoints?.length <= 1) || !isDurationFilled
-            ? settings.taskConfigCardSettings.fill.value.value
-            : null;
+        const taskColor: string = settings.taskConfigCardSettings.fill.value.value;
 
         const tasks: Task[] = Gantt.createTasks(dataView, taskTypes, host, formatters, colors, settings, taskColor, localizationManager, isEndDateFilled, this.hasHighlights);
-
-        // Remove empty legend if tasks isn't exist
-        const types = lodashGroupBy(tasks, x => x.taskType);
-        legendData.dataPoints = legendData.dataPoints?.filter(x => types[x.label]);
 
         return {
             dataView,
             settings,
             taskTypes,
             tasks,
-            legendData,
             milestonesData,
             isDurationFilled,
             isEndDateFilled: isEndDateFilled,
@@ -1574,7 +1486,6 @@ export class Gantt implements IVisual {
             settings.taskConfigCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskConfigCardSettings.fill.value.value);
             settings.taskLabelsCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskLabelsCardSettings.fill.value.value);
             settings.taskResourceCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskResourceCardSettings.fill.value.value);
-            settings.legendCardSettings.labelColor.value.value = colorHelper.getHighContrastColor("foreground", settings.legendCardSettings.labelColor.value.value);
         }
 
         return settings;
@@ -1592,78 +1503,13 @@ export class Gantt implements IVisual {
     * @param dataView The data model.
     */
     private static getAllTasksTypes(dataView: DataView): TaskTypes {
-        const taskTypes: TaskTypes = {
-            typeName: "",
-            types: []
-        };
-        const index: number = dataView.metadata.columns.findIndex(col => GanttRole.Legend in col.roles);
-
-        if (index !== -1) {
-            taskTypes.typeName = dataView.metadata.columns[index].displayName;
-            const legendMetaCategoryColumn: DataViewMetadataColumn = dataView.metadata.columns[index];
-            const values = (dataView?.categorical?.values?.length && dataView.categorical.values) || <DataViewValueColumns>[];
-
-            if (values === undefined || values.length === 0) {
-                return;
-            }
-
-            const groupValues = values.grouped();
-            taskTypes.types = groupValues.map((group: DataViewValueColumnGroup): TaskTypeMetadata => {
-                const column: DataViewCategoryColumn = {
-                    identity: [group.identity],
-                    source: {
-                        displayName: null,
-                        queryName: legendMetaCategoryColumn.queryName
-                    },
-                    values: null
-                };
-                return {
-                    name: group.name as string,
-                    selectionColumn: column,
-                    columnGroup: group
-                };
-            });
-        }
-
-        return taskTypes;
+        return null;
     }
 
     private static hasHighlights(dataView: DataView): boolean {
         const values = (dataView?.categorical?.values?.length && dataView.categorical.values) || <DataViewValueColumns>[];
         const highlightsExist = values.some(({ highlights }) => highlights?.some(Number.isInteger));
         return !!highlightsExist;
-    }
-
-    /**
-     * Get legend data, calculate position and draw it
-     */
-    private renderLegend(): void {
-        if (!this.viewModel.legendData?.dataPoints) {
-            return;
-        }
-
-        const position: string | LegendPosition = this.viewModel.settings.legendCardSettings.show.value
-            ? LegendPosition[this.viewModel.settings.legendCardSettings.position.value.value]
-            : LegendPosition.None;
-
-        this.legend.changeOrientation(position as LegendPosition);
-        this.legend.drawLegend(this.viewModel.legendData, lodashClone(this.viewport));
-        LegendModule.positionChartArea(this.ganttDiv, this.legend);
-
-        switch (this.legend.getOrientation()) {
-            case LegendPosition.Left:
-            case LegendPosition.LeftCenter:
-            case LegendPosition.Right:
-            case LegendPosition.RightCenter:
-                this.viewport.width -= this.legend.getMargins().width;
-                break;
-            case LegendPosition.Top:
-            case LegendPosition.TopCenter:
-            case LegendPosition.Bottom:
-            case LegendPosition.BottomCenter:
-                this.viewport.height -= this.legend.getMargins().height;
-                break;
-        }
     }
 
     private scaleAxisLength(axisLength: number): number {
@@ -1732,7 +1578,6 @@ export class Gantt implements IVisual {
     private render(): void {
         const settings = this.viewModel.settings;
 
-        this.renderLegend();
         this.updateChartSize();
 
         const visibleTasks = this.viewModel.tasks
@@ -1814,7 +1659,6 @@ export class Gantt implements IVisual {
             const behaviorOptions: BehaviorOptions = {
                 clearCatcher: this.body,
                 taskSelection: this.taskGroup.selectAll(Gantt.SingleTask.selectorName),
-                legendSelection: this.body.selectAll(Gantt.LegendItems.selectorName),
                 subTasksCollapse: {
                     selection: this.body.selectAll(Gantt.ClickableArea.selectorName),
                     callback: this.subTasksCollapseCb.bind(this)
@@ -2552,17 +2396,18 @@ export class Gantt implements IVisual {
      *
      * @param milestoneType milestone type
      */
-    private getMilestoneColor(milestoneType: string): string {
-        const milestone: MilestoneDataPoint = this.viewModel.milestonesData.dataPoints.filter((dataPoint: MilestoneDataPoint) => dataPoint.name === milestoneType)[0];
-
-        return this.colorHelper.getHighContrastColor("foreground", milestone.color);
+    private getMilestoneColor(): string {
+        const colorSetting = this.viewModel?.settings?.milestonesCardSettings?.fill?.value?.value
+            || Gantt.DefaultValues.MilestoneFillColor;
+        return this.colorHelper.getHighContrastColor("foreground", colorSetting);
     }
 
-    private getMilestonePath(milestoneType: string, taskConfigHeight: number): string {
+    private getMilestonePath(taskConfigHeight: number): string {
         let shape: string;
         const convertedHeight: number = Gantt.getBarHeight(taskConfigHeight);
-        const milestone: MilestoneDataPoint = this.viewModel.milestonesData.dataPoints.filter((dataPoint: MilestoneDataPoint) => dataPoint.name === milestoneType)[0];
-        switch (milestone.shapeType) {
+        const shapeType = (this.viewModel?.settings?.milestonesCardSettings?.shapeType?.value?.value as MilestoneShape)
+            || MilestoneShape.Rhombus;
+        switch (shapeType) {
             case MilestoneShape.Rhombus:
                 shape = drawDiamond(convertedHeight);
                 break;
@@ -2645,16 +2490,12 @@ export class Gantt implements IVisual {
             .merge(<any>taskMilestonesSelection);
 
         taskMilestonesSelectionMerged
-            .attr("d", (data: MilestonePath) => this.getMilestonePath(data.type, taskConfigHeight))
+            .attr("d", () => this.getMilestonePath(taskConfigHeight))
             .attr("transform", (data: MilestonePath) => transformForMilestone(data.taskID, data.start))
-            .attr("fill", (data: MilestonePath) => this.getMilestoneColor(data.type))
+            .attr("fill", () => this.getMilestoneColor())
             .attr("stroke", Gantt.DefaultValues.TaskColor)
             .attr("stroke-width", 1);
 
-        const labelFormatter = ValueFormatter.create({
-            format: this.viewModel.settings.tooltipConfigCardSettings.dateFormat.value,
-            cultureSelector: this.host?.locale || null
-        });
         const milestoneLabelFormatter = ValueFormatter.create({
             format: "dd.MM.",
             cultureSelector: this.host?.locale || null
@@ -2673,6 +2514,8 @@ export class Gantt implements IVisual {
             .append("text")
             .merge(<any>milestoneLabels);
 
+        const milestoneLabelFontSize = this.viewModel.settings.milestonesCardSettings.labelFontSize.value || 16;
+
         milestoneLabelsMerged
             .classed("milestone-label", true)
             .text((data: MilestonePath) => milestoneLabelFormatter.format(data.start))
@@ -2681,9 +2524,12 @@ export class Gantt implements IVisual {
                 + (data.taskID + 1) * this.getResourceLabelTopMargin()
                 + Gantt.getBarHeight(taskConfigHeight) / 2)
             .attr("dominant-baseline", "middle")
-            .style("font-size", "16px")
+            .style("font-size", `${milestoneLabelFontSize}px`)
             .style("font-weight", "700")
-            .style("fill", this.colorHelper.getHighContrastColor("foreground", Gantt.DefaultValues.TaskColor));
+            .style("fill", this.colorHelper.getHighContrastColor(
+                "foreground",
+                this.viewModel.settings.milestonesCardSettings.labelColor.value.value || Gantt.DefaultValues.TaskColor
+            ));
 
         this.renderTooltip(taskMilestonesSelectionMerged);
     }
@@ -3265,39 +3111,10 @@ export class Gantt implements IVisual {
     public filterSettingsCards() {
         const settings: GanttChartSettingsModel = this.formattingSettings;
 
+        settings.milestonesCardSettings.visible = !!(this.viewModel?.milestonesData?.dataPoints?.length);
+
         settings.cards.forEach(element => {
             switch(element.name) {
-                case Gantt.MilestonesPropertyIdentifier.objectName: {
-                    if (this.viewModel && !this.viewModel.isDurationFilled && !this.viewModel.isEndDateFilled) {
-                        return;
-                    }
-
-                    const dataPoints: MilestoneDataPoint[] = this.viewModel && this.viewModel.milestonesData.dataPoints;
-                    if (!dataPoints || !dataPoints.length) {
-                        settings.milestonesCardSettings.visible = false;
-                        return;
-                    }
-
-                    const milestonesWithoutDuplicates = Gantt.getUniqueMilestones(dataPoints);
-
-                    settings.populateMilestones(milestonesWithoutDuplicates);
-                    break;
-                }
-
-                case Gantt.LegendPropertyIdentifier.objectName: {
-                    if (this.viewModel && !this.viewModel.isDurationFilled && !this.viewModel.isEndDateFilled) {
-                        return;
-                    }
-
-                    const dataPoints: LegendDataPoint[] = this.viewModel && this.viewModel.legendData.dataPoints;
-                    if (!dataPoints || !dataPoints.length) {
-                        return;
-                    }
-
-                    settings.populateLegend(dataPoints, this.localizationManager);
-                    break;
-                }
-
                 case Gantt.TaskResourcePropertyIdentifier.objectName:
                     if (!this.viewModel.isResourcesFilled) {
                         settings.taskResourceCardSettings.visible = false;

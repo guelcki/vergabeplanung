@@ -43,9 +43,6 @@ import SelectableDataPoint = interactivityService.SelectableDataPoint;
 import { valueFormatter as vf } from "powerbi-visuals-utils-formattingutils";
 import IValueFormatter = vf.IValueFormatter;
 
-import { legendInterfaces } from "powerbi-visuals-utils-chartutils";
-import LegendData = legendInterfaces.LegendData;
-
 import * as SVGUtil from "powerbi-visuals-utils-svgutils";
 import IMargin = SVGUtil.IMargin;
 
@@ -106,9 +103,8 @@ export interface GanttViewModel {
     dataView: DataView;
     settings: GanttChartSettingsModel;
     tasks: Task[];
-    legendData: LegendData;
     milestonesData: MilestoneData;
-    taskTypes: TaskTypes;
+    taskTypes: TaskTypes | null;
     isDurationFilled: boolean;
     isEndDateFilled: boolean;
     isParentFilled: boolean;

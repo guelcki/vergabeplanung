@@ -46,7 +46,6 @@ import {
 } from "powerbi-visuals-utils-testutils";
 
 import {pixelConverter as PixelConverter} from "powerbi-visuals-utils-typeutils";
-import {legendPosition as LegendPosition} from "powerbi-visuals-utils-chartutils";
 import {valueFormatter} from "powerbi-visuals-utils-formattingutils";
 
 import {Milestone, Task, TaskDaysOff} from "../src/interfaces";
@@ -1406,40 +1405,12 @@ describe("Gantt", () => {
         describe("Sub tasks", () => {
             beforeEach(() => {
                 dataView = defaultDataViewBuilder.getDataView([
-                    VisualData.ColumnType,
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
                     VisualData.ColumnDuration,
                     VisualData.ColumnParent]);
 
                 fixDataViewDateValuesAggregation(dataView);
-            });
-
-            it("inherit parent legend", (done) => {
-                dataView.metadata.objects = {
-                    subTasks: {
-                        inheritParentLegend: true
-                    }
-                };
-
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    const tasks = d3Select(visualBuilder.element)
-                        .selectAll(".task")
-                        .data() as Task[];
-
-                    tasks.forEach((task: Task) => {
-                        if (task.parent) {
-                            const parentName = task.parent.substring(0, task.parent.length - task.name.length - 1);
-                            const parentTask: Task = tasks.find(t => t.name == parentName) as Task;
-
-                            if (parentTask) {
-                                expect(task.taskType).toEqual(parentTask.taskType);
-                            }
-                        }
-                    });
-
-                    done();
-                });
             });
 
             it("parent duration by children", (done) => {
@@ -1877,44 +1848,6 @@ describe("Gantt", () => {
                     visualBuilder.taskLabelsText.forEach(e =>
                         assertColorsMatch(e.getAttribute("fill"), color));
 
-                    done();
-                });
-            });
-        });
-
-        describe("Legend", () => {
-            beforeEach(() => {
-                dataView.metadata.objects = {
-                    legend: {
-                        show: true,
-                        position: LegendPosition.right
-                    }
-                };
-            });
-
-            it("show", (done) => {
-                dataView.metadata.objects = {
-                    legend: {
-                        show: true
-                    }
-                };
-
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(visualBuilder.legendGroup.children.length).not.toEqual(0);
-
-                    done();
-                });
-            });
-
-            it("hide", (done) => {
-                dataView.metadata.objects = {
-                    legend: {
-                        show: false
-                    }
-                };
-
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(visualBuilder.legendGroup.children.length).toEqual(0);
                     done();
                 });
             });
