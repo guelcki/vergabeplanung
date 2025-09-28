@@ -1805,11 +1805,6 @@ export class Gantt implements IVisual {
         this.renderTasks(groupedTasks);
         this.updateTaskLabels(groupedTasks, settings.taskLabelsCardSettings.width.value);
         this.updateElementsPositions(this.margin);
-        this.createMilestoneLine(groupedTasks);
-
-        if (this.formattingSettings.generalCardSettings.scrollToCurrentTime.value && this.hasNotNullableDates) {
-            this.scrollToMilestoneLine(axisLength);
-        }
 
         this.bindInteractivityService(tasks);
     }

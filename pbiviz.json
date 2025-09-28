@@ -4,7 +4,7 @@
     "displayName": "Vergabeplanung",
     "guid": "Vergabeplanung",
     "visualClassName": "Gantt",
-    "version": "2025.0.1.0",
+    "version": "2025.0.1.1",
     "description": "Vergabeplanung visual for Microsoft Power BI.",
     "supportUrl": "https://community.powerbi.com",
     "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-gantt"
