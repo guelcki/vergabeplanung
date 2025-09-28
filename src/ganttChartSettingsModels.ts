@@ -117,7 +117,7 @@ class WidthSettings {
 }
 
 class HeightSettings {
-    public static readonly DefaultFontSize: number = 40;
+    public static readonly DefaultFontSize: number = 25;
     public static readonly MinFontSize: number = 1;
 }
 
@@ -320,6 +320,24 @@ export class MilestonesCardSettings extends Card {
         value: { value: "#FFFA94" }
     });
 
+    labelColor = new formattingSettings.ColorPicker({
+        name: "labelColor",
+        displayName: "Datum",
+        value: { value: "#303030" }
+    });
+
+    labelFontSize = new formattingSettings.NumUpDown({
+        name: "labelFontSize",
+        displayName: "Schriftgrad",
+        value: 16,
+        options: {
+            minValue: {
+                type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                value: 8
+            }
+        }
+    });
+
     shapeType = new formattingSettings.ItemDropdown({
         name: "shapeType",
         displayNameKey: "Visual_Shape",
@@ -329,7 +347,7 @@ export class MilestonesCardSettings extends Card {
 
     name: string = "milestones";
     displayNameKey: string = "Visual_Milestones";
-    slices = [];
+    slices = [this.fill, this.labelColor, this.labelFontSize, this.shapeType];
 }
 
 export class TaskLabelsCardSettings extends Card {
@@ -417,7 +435,7 @@ export class TaskConfigCardSettings extends Card {
         displayNameKey: "Visual_TaskSettings_Color",
         description: "This ONLY takes effect when you have no legend specified",
         descriptionKey: "Visual_Description_TaskSettings_Color",
-        value: { value: "#00B099" }
+        value: { value: "#303030" }
     });
 
     height = new formattingSettings.NumUpDown({
@@ -547,34 +565,6 @@ export class GanttChartSettingsModel extends Model {
         this.setLocalizedDisplayName(resourcePositionOptions, localizationManager);
         this.setLocalizedDisplayName(dateTypeOptions, localizationManager);
     }       
-
-    populateMilestones(milestonesWithoutDuplicates: {
-        [name: string]: MilestoneDataPoint
-    }) {
-        const newSlices = [];
-
-        if (milestonesWithoutDuplicates) {
-            for (const uniqMilestones in milestonesWithoutDuplicates) {
-                const milestone = milestonesWithoutDuplicates[uniqMilestones];
-                newSlices.push(new formattingSettings.ColorPicker({
-                    name: this.milestonesCardSettings.fill.name,
-                    displayName: `${milestone.name} color`,
-                    selector: ColorHelper.normalizeSelector((<ISelectionId>milestone.identity).getSelector(), false),
-                    value: { value: milestone.color }
-                }));
-    
-                newSlices.push(new formattingSettings.ItemDropdown({
-                    name: this.milestonesCardSettings.shapeType.name,
-                    displayName: `${milestone.name} shape`,
-                    items: shapesOptions,
-                    value: shapesOptions.filter(el => el.value === milestone.shapeType)[0],
-                    selector: ColorHelper.normalizeSelector((<ISelectionId>milestone.identity).getSelector(), false),
-                }));
-            }
-        }
-
-        this.milestonesCardSettings.slices = newSlices;
-    }
 
     public populateLegend(dataPoints: LegendDataPoint[], localizationManager: ILocalizationManager) {
         const newSlices: FormattingSettingsSlice[] = [
