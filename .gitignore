@@ -1,14 +1,25 @@
-node_modules
-.DS_Store
-.tmp
-dist
-typings
-.api
-*.log
-/coverage
-webpack.statistics.html
-webpack.statistics.dev.html
-webpack.statistics.prod.html
+# Dependencies
+node_modules/
 
-# JetBrains
+# Build artifacts
+dist/
+*.pbiviz
+
+# Temporary and cache directories
+.tmp/
+coverage/
+debug/
+webpack.statistics*.html
+
+# Logs
+npm-debug.log*
+yarn-error.log
+*.log
+
+# Editor/IDE settings
+.vscode/
 .idea/
+
+# OS metadata
+.DS_Store
+Thumbs.db

@@ -8,26 +8,27 @@
         },
         {
             "name": "Task",
-            "displayName": "Task",
-            "displayNameKey": "Role_Task",
+            "displayName": "System",
             "kind": "Grouping"
         },
         {
             "name": "Parent",
-            "displayName": "Parent",
-            "displayNameKey": "Role_Parent",
+            "displayName": "Projekt",
             "kind": "Grouping"
         },
         {
             "name": "StartDate",
-            "displayName": "Start Date",
-            "displayNameKey": "Role_StartDate",
+            "displayName": "Beginn Verhandlung",
+            "kind": "Grouping"
+        },
+        {
+            "name": "Milestones",
+            "displayName": "Vergabe SOLL",
             "kind": "Grouping"
         },
         {
             "name": "EndDate",
-            "displayName": "End Date",
-            "displayNameKey": "Role_EndDate",
+            "displayName": "Vergabe Prognose",
             "kind": "Measure"
         },
         {
@@ -68,12 +69,6 @@
             "name": "ExtraInformation",
             "displayName": "Tooltips",
             "displayNameKey": "Role_Tooltips",
-            "kind": "Grouping"
-        },
-        {
-            "name": "Milestones",
-            "displayName": "Milestones",
-            "displayNameKey": "Milestones",
             "kind": "Grouping"
         }
     ],
@@ -269,17 +264,17 @@
                         },
                         {
                             "for": {
+                                "in": "Milestones"
+                            }
+                        },
+                        {
+                            "for": {
                                 "in": "Resource"
                             }
                         },
                         {
                             "for": {
                                 "in": "ExtraInformation"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "Milestones"
                             }
                         }
                     ]
