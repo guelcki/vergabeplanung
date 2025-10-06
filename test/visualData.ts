@@ -42,7 +42,7 @@ export class VisualData extends TestDataViewBuilder {
     public static ColumnType: string = "Type";
     public static ColumnTask: string = "Task";
     public static ColumnStartDate: string = "StartDate";
-    public static ColumnDuration: string = "Duration";
+    public static ColumnEndDate: string = "EndDate";
     public static ColumnResource: string = "Resource";
     public static ColumnCompletePercentage: string = "CompletePercentage";
     public static ColumnExtraInformation: string = "Description";
@@ -78,7 +78,9 @@ export class VisualData extends TestDataViewBuilder {
         ["Dev", "BugFixing", "Last Name"]
     ];
     public valuesStartDate = VisualData.getRandomUniqueDates(this.valuesTaskTypeResource.length, new Date(2015, 7, 0), new Date(2017, 7, 0));
-    public valuesDuration = VisualData.getRandomUniqueNumbers(this.valuesTaskTypeResource.length, 3, 40);
+    public valuesSpanInDays = VisualData.getRandomUniqueNumbers(this.valuesTaskTypeResource.length, 3, 40);
+    public valuesEndDate = this.valuesStartDate.map((start, idx) =>
+        new Date(start.getTime() + this.valuesSpanInDays[idx] * 24 * 60 * 60 * 1000));
     public valuesCompletePrecntege = VisualData.getRandomUniqueNumbers(this.valuesTaskTypeResource.length);
     public valuesExtraInformation = VisualData.getTexts(this.valuesTaskTypeResource, "Description");
     public valuesExtraInformationDates = VisualData.getRandomUniqueDates(this.valuesTaskTypeResource.length, new Date(2015, 7, 0), new Date(2017, 7, 0));
@@ -115,9 +117,9 @@ export class VisualData extends TestDataViewBuilder {
             return array;
 
         if (highLightedElementNumber >= length || highLightedElementNumber < 0) {
-            array[0] = getRandomNumbers(this.valuesDuration.length, 10, 100)[0];
+            array[0] = getRandomNumbers(this.valuesCompletePrecntege.length, 10, 100)[0];
         } else {
-            array[highLightedElementNumber] = getRandomNumbers(this.valuesDuration.length, 10, 100)[0];
+            array[highLightedElementNumber] = getRandomNumbers(this.valuesCompletePrecntege.length, 10, 100)[0];
         }
 
         return array;
@@ -142,8 +144,8 @@ export class VisualData extends TestDataViewBuilder {
         let highlights: number[] = [];
         if (withHighlights)
         {
-            let highLightedElementNumber: number = Math.round(getRandomNumber(0, this.valuesDuration.length - 1));
-            let highlightedValuesCount: number = this.valuesDuration.length;
+            let highLightedElementNumber: number = Math.round(getRandomNumber(0, this.valuesCompletePrecntege.length - 1));
+            let highlightedValuesCount: number = this.valuesCompletePrecntege.length;
             highlights = this.generateHighLightedValues(highlightedValuesCount, highLightedElementNumber);
         }
 
@@ -156,12 +158,11 @@ export class VisualData extends TestDataViewBuilder {
         const valuesColumns: DataViewBuilderValuesColumnOptions[] = [
             {
                 source: {
-                    displayName: VisualData.ColumnDuration,
-                    type: ValueType.fromDescriptor({numeric: true}),
-                    roles: {[GanttRole.Duration]: true}
+                    displayName: VisualData.ColumnEndDate,
+                    type: ValueType.fromDescriptor({dateTime: true}),
+                    roles: {[GanttRole.EndDate]: true}
                 },
-                values: this.valuesDuration,
-                highlights: highlights.length > 0 ? highlights : undefined
+                values: this.valuesEndDate
             },
             {
                 source: {
@@ -234,17 +235,16 @@ export class VisualData extends TestDataViewBuilder {
     public getDataViewWithHighlights(): DataView {
         const categoriesColumns: TestDataViewBuilderCategoryColumnOptions[] = this.getCategoryColumns();
 
-        let highlightedElementIndex: number = Math.round(getRandomNumber(0, this.valuesDuration.length - 1));
+        let highlightedElementIndex: number = Math.round(getRandomNumber(0, this.valuesCompletePrecntege.length - 1));
 
         const valuesColumns: DataViewBuilderValuesColumnOptions[] = [
             {
                 source: {
-                    displayName: VisualData.ColumnDuration,
-                    type: ValueType.fromDescriptor({numeric: true}),
-                    roles: {[GanttRole.Duration]: true}
+                    displayName: VisualData.ColumnEndDate,
+                    type: ValueType.fromDescriptor({dateTime: true}),
+                    roles: {[GanttRole.EndDate]: true}
                 },
-                values: this.valuesDuration,
-                highlights: this.valuesDuration.map((value, index) => index === highlightedElementIndex ? value : null)
+                values: this.valuesEndDate
             },
             {
                 source: {

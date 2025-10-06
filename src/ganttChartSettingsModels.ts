@@ -33,7 +33,6 @@ import {formattingSettings} from "powerbi-visuals-utils-formattingmodel";
 import {MilestoneShape} from "./enums";
 import {DateType} from "./enums";
 import {ResourceLabelPosition} from "./enums";
-import {DurationUnit} from "./enums";
 
 import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 
@@ -43,13 +42,6 @@ import Model = formattingSettings.Model;
 import IEnumMember = powerbi.IEnumMember;
 import {Day} from "./enums";
 import {MilestoneDataPoint} from "./interfaces";
-
-const durationUnitsOptions : IEnumMember[] = [
-    { displayName: "Visual_DurationUnit_Days", value: DurationUnit.Day },
-    { displayName: "Visual_DurationUnit_Hours", value: DurationUnit.Hour },
-    { displayName: "Visual_DurationUnit_Minutes", value: DurationUnit.Minute },
-    { displayName: "Visual_DurationUnit_Seconds", value: DurationUnit.Second }
-]
 
 const dayOfWeekOptions : IEnumMember[] = [
     { displayName: "Visual_Day_Sunday", value: Day.Sunday },
@@ -83,11 +75,6 @@ const resourcePositionOptions : IEnumMember[] = [
     { displayName: "Visual_Position_Right", value: ResourceLabelPosition.Right },
     { displayName: "Visual_Position_Inside", value: ResourceLabelPosition.Inside }
 ];
-
-class DurationMinSettings {
-    public static readonly DefaultDurationMinValue: number = 1;
-    public static readonly MinDurationMinValue: number = 1;
-}
 
 class FontSizeSettings {
     public static readonly DefaultFontSize: number = 9;
@@ -124,25 +111,6 @@ export class GeneralCardSettings extends Card {
         value: true
     });
 
-    durationUnit = new formattingSettings.ItemDropdown({
-        name: "durationUnit",
-        displayNameKey: "Visual_DurationUnit",
-        items: durationUnitsOptions,
-        value: durationUnitsOptions[0]
-    });
-
-    durationMin = new formattingSettings.NumUpDown({
-        name: "durationMin",
-        displayNameKey: "Visual_DurationMinimum",
-        value: DurationMinSettings.DefaultDurationMinValue,
-        options: {
-            minValue: {
-                type: powerbiVisualsApi.visuals.ValidatorType.Min,
-                value: DurationMinSettings.MinDurationMinValue,
-            }
-        }
-    });
-
     barsRoundedCorners = new formattingSettings.ToggleSwitch({
         name: "barsRoundedCorners",
         displayName: "Bars Rounded Corners",
@@ -152,17 +120,11 @@ export class GeneralCardSettings extends Card {
 
     name: string = "general";
     displayNameKey: string = "Visual_General";
-    slices = [this.groupTasks, this.scrollToCurrentTime, this.displayGridLines, this.durationUnit, this.durationMin, this.barsRoundedCorners];
+    slices = [this.groupTasks, this.scrollToCurrentTime, this.displayGridLines, this.barsRoundedCorners];
 }
 
 export class SubTasksCardSettings extends Card {
 
-    parentDurationByChildren = new formattingSettings.ToggleSwitch({
-        name: "parentDurationByChildren",
-        displayNameKey: "Visual_ParentDurationByChildren",
-        value: true
-    });
-    
     parentCompletionByChildren = new formattingSettings.ToggleSwitch({
         name: "parentCompletionByChildren",
         displayNameKey: "Visual_ParentCompletionByChildren",
@@ -171,7 +133,7 @@ export class SubTasksCardSettings extends Card {
 
     name: string = "subTasks";
     displayNameKey: string = "Visual_SubTasks";
-    slices = [this.parentDurationByChildren, this.parentCompletionByChildren];
+    slices = [this.parentCompletionByChildren];
 }
 
 export class CollapsedTasksCardSettings extends Card {
@@ -476,7 +438,6 @@ export class GanttChartSettingsModel extends Model {
 
 
     setLocalizedOptions(localizationManager: ILocalizationManager) {
-        this.setLocalizedDisplayName(durationUnitsOptions, localizationManager);
         this.setLocalizedDisplayName(dayOfWeekOptions, localizationManager);
         this.setLocalizedDisplayName(shapesOptions, localizationManager);
         this.setLocalizedDisplayName(resourcePositionOptions, localizationManager);

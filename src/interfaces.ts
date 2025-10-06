@@ -69,7 +69,6 @@ export interface Task extends SelectableDataPoint {
     index: number;
     name: string;
     start: Date;
-    duration: number;
     completion: number;
     resource: string;
     end: Date;
@@ -82,8 +81,6 @@ export interface Task extends SelectableDataPoint {
     tooltipInfo: VisualTooltipDataItem[];
     extraInformation: ExtraInformation[];
     daysOffList: DayOffData[];
-    wasDowngradeDurationUnit: boolean;
-    stepDurationTransformation?: number;
     highlight?: boolean;
     Milestones?: Milestone[];
 }
@@ -105,7 +102,6 @@ export interface GanttViewModel {
     tasks: Task[];
     milestonesData: MilestoneData;
     taskTypes: TaskTypes | null;
-    isDurationFilled: boolean;
     isEndDateFilled: boolean;
     isParentFilled: boolean;
     isResourcesFilled: boolean;

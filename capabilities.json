@@ -26,20 +26,6 @@
             "kind": "Measure"
         },
         {
-            "name": "Duration",
-            "displayName": "Duration",
-            "displayNameKey": "Role_Duration",
-            "kind": "Measure",
-            "requiredTypes": [
-                {
-                    "numeric": true
-                },
-                {
-                    "integer": true
-                }
-            ]
-        },
-        {
             "name": "Completion",
             "displayName": "% Completion",
             "displayNameKey": "Role_Completion",
@@ -86,10 +72,6 @@
                         "min": 0,
                         "max": 1
                     },
-                    "Duration": {
-                        "min": 0,
-                        "max": 0
-                    },
                     "Completion": {
                         "min": 0,
                         "max": 0
@@ -124,10 +106,6 @@
                         "min": 0,
                         "max": 0
                     },
-                    "Duration": {
-                        "min": 0,
-                        "max": 1
-                    },
                     "Completion": {
                         "min": 0,
                         "max": 0
@@ -162,10 +140,6 @@
                         "min": 0,
                         "max": 1
                     },
-                    "Duration": {
-                        "min": 0,
-                        "max": 0
-                    },
                     "Completion": {
                         "min": 0,
                         "max": 1
@@ -199,10 +173,6 @@
                     "EndDate": {
                         "min": 0,
                         "max": 0
-                    },
-                    "Duration": {
-                        "min": 0,
-                        "max": 1
                     },
                     "Completion": {
                         "min": 0,
@@ -266,11 +236,6 @@
                         },
                         {
                             "for": {
-                                "in": "Duration"
-                            }
-                        },
-                        {
-                            "for": {
                                 "in": "Completion"
                             }
                         }
@@ -297,16 +262,6 @@
                         "bool": true
                     }
                 },
-                "durationUnit": {
-                    "type": {
-                        "text": true
-                    }
-                },
-                "durationMin": {
-                    "type": {
-                        "numeric": true
-                    }
-                },
                 "barsRoundedCorners": {
                     "type": {
                         "bool": true
@@ -316,11 +271,6 @@
         },
         "subTasks": {
             "properties": {
-                "parentDurationByChildren": {
-                    "type": {
-                        "bool": true
-                    }
-                },
                 "parentCompletionByChildren": {
                     "type": {
                         "bool": true

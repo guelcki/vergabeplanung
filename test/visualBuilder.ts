@@ -31,14 +31,6 @@ import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructor
 import { VisualBuilderBase } from "powerbi-visuals-utils-testutils";
 import { Task } from "../src/interfaces";
 import { Gantt as VisualClass } from "../src/gantt";
-import {DurationUnit} from "../src/enums";
-
-interface TaskMockParamsInterface {
-    id: number;
-    name: string;
-    parent: string;
-    children: string[];
-}
 
 export class VisualBuilder extends VisualBuilderBase<VisualClass> {
     constructor(width: number, height: number) {
@@ -262,10 +254,6 @@ export class VisualBuilder extends VisualBuilderBase<VisualClass> {
         return this.element.querySelector<HTMLElement>('.legend #legendGroup') as HTMLElement;
     }
 
-    public downgradeDurationUnit(tasks: any, durationUnit: DurationUnit) {
-        VisualClass.downgradeDurationUnitIfNeeded(tasks, durationUnit);
-    }
-
     public static getSolidColorStructuralObject(color: string): any {
         return { solid: { color: color } };
     }
@@ -274,133 +262,4 @@ export class VisualBuilder extends VisualBuilderBase<VisualClass> {
         return mockArray[mockCaseName]["data"];
     }
 
-    public static getTaskMockExpected(mockArray: object, mockCaseName: string): Task[] {
-        return mockArray[mockCaseName]["expected"];
-    }
-
-    private static generateTaskWithDefaultParams(taskMockParams: TaskMockParamsInterface) {
-        return {
-            id: taskMockParams.id,
-            name: taskMockParams.name,
-            start: new Date(),
-            duration: 1,
-            completion: 1,
-            resource: "res",
-            end: new Date(),
-            parent: taskMockParams.parent,
-            children: taskMockParams.children,
-            visibility: true,
-            taskType: "type",
-            description: name,
-            color: "red",
-            tooltipInfo: [],
-            extraInformation: [],
-            daysOffList: [],
-            wasDowngradeDurationUnit: true,
-            stepDurationTransformation: 0
-        };
-    }
-
-    private static generateMocksCase(taskMockParams: TaskMockParamsInterface[]) {
-        let result = taskMockParams.map((taskMockParamsItem) => {
-            return VisualBuilder.generateTaskWithDefaultParams(taskMockParamsItem);
-        });
-
-        return result;
-    }
-
-    public static getDowngradeDurationUnitMocks() {
-        const GanttDurationUnitType: DurationUnit[] = [
-            DurationUnit.Second,
-            DurationUnit.Minute,
-            DurationUnit.Hour,
-            DurationUnit.Day,
-        ];
-
-        const downgradeDurationUnitMock = {
-            days: {
-                "data": [
-                    { "unit": GanttDurationUnitType.indexOf(DurationUnit.Day), "duration": 1.5 },
-                    { "unit": GanttDurationUnitType.indexOf(DurationUnit.Day), "duration": 0.84 }
-                ],
-                "expected": [
-                    DurationUnit.Hour,
-                    DurationUnit.Second
-                ]
-            },
-            hours: {
-                "data": [
-                    { "unit": GanttDurationUnitType.indexOf(DurationUnit.Hour), "duration": 0.05 },
-                    { "unit": GanttDurationUnitType.indexOf(DurationUnit.Hour), "duration": 0.005 }
-                ],
-                "expected": [
-                    DurationUnit.Minute,
-                    DurationUnit.Second
-                ]
-            },
-            minutes: {
-                "data": [
-                    { "unit": GanttDurationUnitType.indexOf(DurationUnit.Minute), "duration": 0.01 }
-                ],
-                "expected": [
-                    DurationUnit.Second
-                ]
-            },
-            seconds: {
-                "data": [
-                    { "unit": GanttDurationUnitType.indexOf(DurationUnit.Second), "duration": 0.5 }
-                ],
-                "expected": [
-                    DurationUnit.Second
-                ]
-            }
-        };
-
-        return downgradeDurationUnitMock;
-    }
-
-    public static getTaskMockCommon() {
-        let taskMock = {
-            taskWithCorrectParentsMock: {
-                "data": VisualBuilder.generateMocksCase([
-                    { id: 1, name: "T1", parent: "T1", children: [] },
-                    { id: 2, name: "Group C", parent: "Group C", children: ["T2"] },
-                    { id: 3, name: "T2", parent: "Group C.T2", children: [] }
-                ]),
-                "expected": VisualBuilder.generateMocksCase([
-                    { id: 1, name: "T1", parent: "", children: [] },
-                    { id: 2, name: "Group C", parent: "", children: ["T2"] },
-                    { id: 3, name: "T2", parent: "Group C", children: [] }
-                ])
-            },
-            taskWithNotExistentParentsMock: {
-                "data": VisualBuilder.generateMocksCase([
-                    { id: 1, name: "T1", parent: "T1", children: [] },
-                    { id: 2, name: "Group C", parent: "Group C", children: [] },
-                    { id: 3, name: "T2", parent: "Group A.T2", children: [] },
-                    { id: 4, name: "T3", parent: "Group B.T3", children: [] }
-                ]),
-                "expected": VisualBuilder.generateMocksCase([
-                    { id: 1, name: "T1", parent: "", children: [] },
-                    { id: 2, name: "Group C", parent: "", children: [] },
-                    { id: 3, name: "T2", parent: "", children: [] },
-                    { id: 4, name: "T3", parent: "", children: [] }
-                ])
-            },
-            taskWithNotExistentMiddleParentsMock: {
-                "data": VisualBuilder.generateMocksCase([
-                    { id: 1, name: "T1", parent: "T1", children: [] },
-                    { id: 2, name: "Group C", parent: "Group C", children: ["T2"] },
-                    { id: 3, name: "T2", parent: "Group C.Group M.T2", children: [] }
-                ]),
-                "expected": VisualBuilder.generateMocksCase([
-                    { id: 1, name: "T1", parent: "", children: [] },
-                    { id: 2, name: "Group C", parent: "", children: ["T2"] },
-                    { id: 3, name: "T2", parent: "Group C", children: [] }
-                ])
-            }
-        };
-
-        return taskMock;
-    }
 }

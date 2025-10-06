@@ -35,7 +35,7 @@ import lodashUniqBy from "lodash.uniqby";
 
 import {VisualData} from "./visualData";
 import {VisualBuilder} from "./visualBuilder";
-import {getEndDate, isColorAppliedToElements} from "./helpers/helpers";
+import {isColorAppliedToElements} from "./helpers/helpers";
 import {
     assertColorsMatch,
     clickElement,
@@ -49,12 +49,11 @@ import {pixelConverter as PixelConverter} from "powerbi-visuals-utils-typeutils"
 import {valueFormatter} from "powerbi-visuals-utils-formattingutils";
 
 import {Milestone, Task, TaskDaysOff} from "../src/interfaces";
-import {DurationHelper} from "../src/durationHelper";
 import {Gantt as VisualClass} from "../src/gantt";
 import {getRandomHexColor, isValidDate} from "../src/utils";
 
 import {DefaultOpacity, DimmedOpacity} from "../src/behavior";
-import {DateType, Day, DurationUnit, MilestoneShape, ResourceLabelPosition} from "../src/enums";
+import {DateType, Day, MilestoneShape, ResourceLabelPosition} from "../src/enums";
 import DataView = powerbi.DataView;
 import PrimitiveValue = powerbi.PrimitiveValue;
 
@@ -63,7 +62,6 @@ import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import IValueFormatter = valueFormatter.IValueFormatter;
 
 
-const defaultTaskDuration: number = 1;
 const datesAmountForScroll: number = 90;
 const millisecondsInADay: number = 24 * 60 * 60 * 1000;
 
@@ -156,7 +154,7 @@ describe("Gantt", () => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnType,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnCompletePercentage]);
 
@@ -170,91 +168,11 @@ describe("Gantt", () => {
             });
         });
 
-        it("When task duration is missing,  it should be set to 1", (done) => {
-            dataView = defaultDataViewBuilder.getDataView([
-                VisualData.ColumnType,
-                VisualData.ColumnTask,
-                VisualData.ColumnStartDate,
-                VisualData.ColumnResource,
-                VisualData.ColumnCompletePercentage]);
-
-            fixDataViewDateValuesAggregation(dataView);
-
-            visualBuilder.updateRenderTimeout(dataView, () => {
-                let tasks: Task[] = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-
-                for (let task of tasks) {
-                    expect(task.duration).toEqual(defaultTaskDuration);
-                }
-
-                done();
-            });
-        });
-
-        it("When task duration is 1 or less,  it should be set to 1, not false", (done) => {
-            dataView = defaultDataViewBuilder.getDataView([
-                VisualData.ColumnType,
-                VisualData.ColumnTask,
-                VisualData.ColumnDuration,
-                VisualData.ColumnStartDate,
-                VisualData.ColumnResource,
-                VisualData.ColumnCompletePercentage]);
-
-            dataView
-                .categorical
-                ?.values
-                ?.filter(x => x.source.roles?.Duration)
-                .forEach((element) => {
-                    element.values = element.values.map((v: PrimitiveValue, i) => i === 0 ? 1 : 1 / (v as number));
-                });
-
-            fixDataViewDateValuesAggregation(dataView);
-
-            visualBuilder.updateRenderTimeout(dataView, () => {
-                let tasks: Task[] = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-
-                for (let task of tasks) {
-                    expect(task.duration).toEqual(defaultTaskDuration);
-                }
-
-                done();
-            });
-        });
-
-        it("When task duration is float and duration unit 'second',  it should be round", (done) => {
-            defaultDataViewBuilder.valuesDuration = VisualData.getRandomUniqueNumbers(100, 1, 2, false);
-            dataView = defaultDataViewBuilder.getDataView([
-                VisualData.ColumnType,
-                VisualData.ColumnTask,
-                VisualData.ColumnStartDate,
-                VisualData.ColumnResource,
-                VisualData.ColumnCompletePercentage
-            ]);
-
-            dataView.metadata.objects = {
-                general: {
-                    durationUnit: DurationUnit.Second
-                }
-            };
-
-            fixDataViewDateValuesAggregation(dataView);
-
-            visualBuilder.updateRenderTimeout(dataView, () => {
-                let tasks: Task[] = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-
-                for (let task of tasks) {
-                    expect(task.duration).toEqual(defaultTaskDuration);
-                }
-
-                done();
-            });
-        });
-
         it("When task start time is missing, it should be set to today date", (done) => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnCompletePercentage]);
 
@@ -274,7 +192,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnCompletePercentage]);
 
             fixDataViewDateValuesAggregation(dataView);
@@ -293,7 +211,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource]);
 
             fixDataViewDateValuesAggregation(dataView);
@@ -320,7 +238,7 @@ describe("Gantt", () => {
         //         VisualData.ColumnTask,
         //         VisualData.ColumnType,
         //         VisualData.ColumnStartDate,
-        //         VisualData.ColumnDuration,
+        //         VisualData.ColumnEndDate,
         //         VisualData.ColumnCompletePercentage,
         //         VisualData.ColumnResource]);
 
@@ -350,7 +268,7 @@ describe("Gantt", () => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
             ]);
 
             fixDataViewDateValuesAggregation(dataView);
@@ -371,49 +289,12 @@ describe("Gantt", () => {
             });
         });
 
-        it("Verify case if duration is not integer number", (done) => {
-            defaultDataViewBuilder.valuesDuration = VisualData.getRandomUniqueNumbers(
-                defaultDataViewBuilder.valuesTaskTypeResource.length, 0, 20, false);
-            dataView = defaultDataViewBuilder.getDataView([
-                VisualData.ColumnTask,
-                VisualData.ColumnStartDate,
-                VisualData.ColumnDuration]);
-
-            dataView.metadata.objects = {
-                general: {
-                    durationUnit: DurationUnit.Day
-                }
-            };
-
-            fixDataViewDateValuesAggregation(dataView);
-
-            visualBuilder.updateRenderTimeout(dataView, () => {
-                let tasks: Task[] = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-
-                for (let i in tasks) {
-                    let newDuration: number = tasks[i].duration;
-                    if (tasks[i].duration % 1 !== 0) {
-                        newDuration = VisualClass["transformDuration"](
-                            defaultDataViewBuilder.valuesDuration[i],
-                            DurationUnit.Minute,
-                            2
-                        );
-                    }
-
-                    expect(tasks[i].duration).toEqual(newDuration);
-                    expect(tasks[i].duration % 1 === 0).toBeTruthy();
-                }
-
-                done();
-            });
-        });
-
         it("Verify tooltips have extra information", (done) => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnExtraInformation,
                 VisualData.ColumnResource]);
 
@@ -445,7 +326,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnExtraInformationDates]);
 
             visualBuilder.updateRenderTimeout(dataView, () => {
@@ -466,14 +347,12 @@ describe("Gantt", () => {
 
         it("Verify tooltips have only string values", (done) => {
             const randomNumber = 134223;
-            const durationUnit = DurationUnit.Day;
 
             const task: any = {
                 taskType: randomNumber,
                 name: randomNumber,
                 start: new Date(),
                 end: new Date(),
-                duration: randomNumber,
                 completion: randomNumber,
                 extraInformation: []
             };
@@ -484,7 +363,7 @@ describe("Gantt", () => {
             };
             const localizationManager = visualBuilder.visualHost.createLocalizationManager();
 
-            const tooltips = VisualClass.getTooltipInfo(task, formatters, durationUnit, localizationManager, false, undefined);
+            const tooltips = VisualClass.getTooltipInfo(task, formatters, localizationManager);
             tooltips
                 .filter(t => t.value !== null && t.value !== undefined)
                 .forEach(t => {
@@ -498,7 +377,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnParent,
                 VisualData.ColumnResource]);
 
@@ -530,7 +409,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnParent
             ]);
@@ -545,7 +424,7 @@ describe("Gantt", () => {
                     VisualData.ColumnType,
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration,
+                    VisualData.ColumnEndDate,
                     VisualData.ColumnResource
                 ]);
 
@@ -578,7 +457,7 @@ describe("Gantt", () => {
                 dataView = defaultDataViewBuilder.getDataView([
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration,
+                    VisualData.ColumnEndDate,
                     VisualData.ColumnCompletePercentage]);
 
                 fixDataViewDateValuesAggregation(dataView);
@@ -596,7 +475,7 @@ describe("Gantt", () => {
                 dataView = defaultDataViewBuilder.getDataView([
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration]);
+                    VisualData.ColumnEndDate]);
 
                 fixDataViewDateValuesAggregation(dataView);
 
@@ -623,7 +502,7 @@ describe("Gantt", () => {
                 dataView = defaultDataViewBuilder.getDataView([
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration,
+                    VisualData.ColumnEndDate,
                     VisualData.ColumnParent]);
 
                 fixDataViewDateValuesAggregation(dataView);
@@ -635,7 +514,7 @@ describe("Gantt", () => {
                 dataView = defaultDataViewBuilder.getDataView([
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration]);
+                    VisualData.ColumnEndDate]);
 
                 checkTasksHaveTooltipInfo(done);
             });
@@ -731,7 +610,7 @@ describe("Gantt", () => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration]);
+                VisualData.ColumnEndDate]);
 
             fixDataViewDateValuesAggregation(dataView);
 
@@ -786,7 +665,7 @@ describe("Gantt", () => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration]);
+                VisualData.ColumnEndDate]);
 
             fixDataViewDateValuesAggregation(dataView);
 
@@ -809,7 +688,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration]);
+                VisualData.ColumnEndDate]);
 
             dataView.metadata.objects = { general: { groupTasks: true } };
 
@@ -839,7 +718,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration]);
+                VisualData.ColumnEndDate]);
 
             dataView.metadata.objects = { general: { groupTasks: true } };
 
@@ -868,7 +747,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnParent
             ]);
@@ -921,7 +800,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnParent
             ]);
@@ -970,7 +849,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnParent,
                 VisualData.ColumnMilestones
@@ -1032,7 +911,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnDuration,
+                VisualData.ColumnEndDate,
                 VisualData.ColumnResource,
                 VisualData.ColumnParent,
                 VisualData.ColumnMilestones
@@ -1202,112 +1081,6 @@ describe("Gantt", () => {
                 });
             });
 
-            describe("Duration units", () => {
-
-                function checkDurationUnit(durationUnit: DurationUnit) {
-                    const tasks: Task[] = d3Select(visualBuilder.element)
-                        .selectAll(".task")
-                        .data() as Task[];
-
-                    tasks.forEach(task => {
-                        if (task.duration) {
-                            const dates: Date[] = getEndDate(durationUnit, task.start, task.end);
-                            expect(dates.length).toEqual(task.duration);
-                        }
-                    });
-                }
-
-                function setDurationUnit(durationUnit: DurationUnit) {
-                    dataView.metadata.objects = {
-                        general: {
-                            durationUnit: durationUnit
-                        }
-                    };
-                }
-
-                it("days", (done) => {
-                    const durationUnit: DurationUnit = DurationUnit.Day;
-                    setDurationUnit(durationUnit);
-
-                    fixDataViewDateValuesAggregation(dataView);
-
-                    visualBuilder.updateRenderTimeout(dataView, () => {
-                        checkDurationUnit(durationUnit);
-                        done();
-                    });
-                });
-
-                it("hours", (done) => {
-                    const durationUnit: DurationUnit = DurationUnit.Hour;
-                    setDurationUnit(durationUnit);
-
-                    fixDataViewDateValuesAggregation(dataView);
-
-                    visualBuilder.updateRenderTimeout(dataView, () => {
-                        checkDurationUnit(durationUnit);
-                        done();
-                    });
-                });
-
-                it("minutes", (done) => {
-                    const durationUnit: DurationUnit = DurationUnit.Minute;
-                    setDurationUnit(durationUnit);
-
-                    fixDataViewDateValuesAggregation(dataView);
-
-                    visualBuilder.updateRenderTimeout(dataView, () => {
-                        checkDurationUnit(durationUnit);
-                        done();
-                    });
-                });
-
-                it("seconds", (done) => {
-                    const durationUnit = DurationUnit.Second;
-                    setDurationUnit(durationUnit);
-
-                    fixDataViewDateValuesAggregation(dataView);
-
-                    visualBuilder.updateRenderTimeout(dataView, () => {
-                        checkDurationUnit(durationUnit);
-                        done();
-                    });
-                });
-
-            });
-
-            describe("Duration units downgrade", () => {
-                const firstTaskDuration = 4404;
-                const secondTaskDuration = 1;
-                const thirdTaskDuration = 1.12;
-                const secondInHour = 3600;
-
-                it("hour to second", done => {
-                    const tasks = [
-                        {
-                            wasDowngradeDurationUnit: true,
-                            stepDurationTransformation: 2,
-                            duration: firstTaskDuration
-                        },
-                        {
-                            wasDowngradeDurationUnit: false,
-                            stepDurationTransformation: 0,
-                            duration: secondTaskDuration
-                        },
-                        {
-                            wasDowngradeDurationUnit: false,
-                            stepDurationTransformation: 0,
-                            duration: thirdTaskDuration
-                        }
-                    ];
-
-                    visualBuilder.downgradeDurationUnit(tasks, DurationUnit.Second);
-                    expect(tasks[0].duration).toEqual(firstTaskDuration);
-                    expect(tasks[1].duration).toEqual(Math.floor(secondTaskDuration * secondInHour));
-                    expect(tasks[2].duration).toEqual(Math.floor(thirdTaskDuration * secondInHour));
-
-                    done();
-                });
-            });
         });
 
         describe("Days off", () => {
@@ -1379,16 +1152,13 @@ describe("Gantt", () => {
                     startDate,
                     endDate
                 );
-                defaultDataViewBuilder.valuesDuration = VisualData.getRandomUniqueNumbers(
-                    defaultDataViewBuilder.valuesTaskTypeResource.length, 30, 48);
+                defaultDataViewBuilder.valuesEndDate = defaultDataViewBuilder.valuesStartDate.map(date =>
+                    new Date(date.getTime() + 48 * 60 * 60 * 1000));
                 dataView = defaultDataViewBuilder.getDataView();
 
                 fixDataViewDateValuesAggregation(dataView);
 
                 dataView.metadata.objects = {
-                    general: {
-                        durationUnit: DurationUnit.Hour
-                    },
                     dateType: {
                         type: DateType.Hour
                     },
@@ -1407,36 +1177,10 @@ describe("Gantt", () => {
                 dataView = defaultDataViewBuilder.getDataView([
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration,
+                    VisualData.ColumnEndDate,
                     VisualData.ColumnParent]);
 
                 fixDataViewDateValuesAggregation(dataView);
-            });
-
-            it("parent duration by children", (done) => {
-                dataView.metadata.objects = {
-                    subTasks: {
-                        parentDurationByChildren: true
-                    }
-                };
-
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    let tasks = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-                    let { parents, children } = getChildrenAndParents(tasks);
-
-                    parents.forEach((parent: Task) => {
-                        const start: Date = (lodashMinBy(children[parent.name], (childTask: Task) => childTask.start)).start;
-                        const end: Date = (lodashMaxBy(children[parent.name], (childTask: Task) => childTask.end)).end;
-
-                        expect(parent.start).toEqual(start);
-                        expect(parent.end).toEqual(end);
-
-                        const newDuration: number = d3TimeDay.range(start, end).length;
-                        expect(parent.duration).toEqual(newDuration);
-                    });
-
-                    done();
-                });
             });
 
             it("parent completion by children", (done) => {
@@ -1717,50 +1461,12 @@ describe("Gantt", () => {
         //     });
         // });
 
-        describe("check duration unit downgrade", () => {
-            it("check for days downgrading", () => {
-                let unitMocks = VisualBuilder.getDowngradeDurationUnitMocks(),
-                    data = unitMocks.days.data,
-                    expected = unitMocks.days.expected,
-                    realResult = data.map((dataItem) => DurationHelper.getNewUnitByFloorDuration(dataItem.unit, dataItem.duration));
-
-                expect(realResult).toEqual(expected);
-            });
-
-            it("check for hours downgrading", () => {
-                let unitMocks = VisualBuilder.getDowngradeDurationUnitMocks(),
-                    data = unitMocks.hours.data,
-                    expected = unitMocks.hours.expected,
-                    realResult = data.map((dataItem) => DurationHelper.getNewUnitByFloorDuration(dataItem.unit, dataItem.duration));
-
-                expect(realResult).toEqual(expected);
-            });
-
-            it("check for minutes downgrading", () => {
-                let unitMocks = VisualBuilder.getDowngradeDurationUnitMocks(),
-                    data = unitMocks.minutes.data,
-                    expected = unitMocks.minutes.expected,
-                    realResult = data.map((dataItem) => DurationHelper.getNewUnitByFloorDuration(dataItem.unit, dataItem.duration));
-
-                expect(realResult).toEqual(expected);
-            });
-
-            it("check for hours downgrading", () => {
-                let unitMocks = VisualBuilder.getDowngradeDurationUnitMocks(),
-                    data = unitMocks.seconds.data,
-                    expected = unitMocks.seconds.expected,
-                    realResult = data.map((dataItem) => DurationHelper.getNewUnitByFloorDuration(dataItem.unit, dataItem.duration));
-
-                expect(realResult).toEqual(expected);
-            });
-        });
-
         describe("Task Settings", () => {
             it("color", (done) => {
                 dataView = defaultDataViewBuilder.getDataView([
                     VisualData.ColumnTask,
                     VisualData.ColumnStartDate,
-                    VisualData.ColumnDuration,
+                    VisualData.ColumnEndDate,
                     VisualData.ColumnResource]);
 
                 fixDataViewDateValuesAggregation(dataView);

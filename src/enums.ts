@@ -19,13 +19,6 @@ export enum Day {
     Saturday = "6"
 }
 
-export enum DurationUnit {
-    Second = "second",
-    Minute = "minute",
-    Hour = "hour",
-    Day = "day",
-}
-
 export enum LabelForDate {
     Now = "Now",
     Today = "Today"
@@ -48,7 +41,6 @@ export enum GanttRole {
     Parent = "Parent",
     StartDate = "StartDate",
     EndDate = "EndDate",
-    Duration = "Duration",
     Completion = "Completion",
     Resource = "Resource",
     Milestones = "Milestones",
