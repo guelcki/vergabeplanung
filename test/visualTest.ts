@@ -904,6 +904,46 @@ describe("Gantt", () => {
             });
         });
 
+        it("Milestone before task start is preserved", (done) => {
+            dataView = defaultDataViewBuilder.getDataView([
+                VisualData.ColumnType,
+                VisualData.ColumnTask,
+                VisualData.ColumnStartDate,
+                VisualData.ColumnEndDate,
+                VisualData.ColumnResource,
+                VisualData.ColumnParent,
+                VisualData.ColumnMilestones
+            ], true);
+
+            const categories = dataView.categorical?.categories ?? [];
+            const milestoneCategory = categories.find(category => category.source.displayName === VisualData.ColumnMilestones);
+            const startDateCategory = categories.find(category => category.source.displayName === VisualData.ColumnStartDate);
+
+            const firstTaskIndex = 0;
+            const startDate = startDateCategory?.values[firstTaskIndex] as Date;
+            const milestoneDate = new Date((startDate?.getTime() ?? Date.now()) - (24 * 60 * 60 * 1000));
+
+            if (milestoneCategory) {
+                milestoneCategory.values[firstTaskIndex] = milestoneDate;
+            }
+
+            fixDataViewDateValuesAggregation(dataView);
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const tasks: Task[] = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
+                const taskWithMilestone = tasks.find(task => task.Milestones?.length);
+
+                expect(taskWithMilestone).toBeDefined();
+                const milestone = taskWithMilestone?.Milestones?.[0];
+                expect(milestone).toBeDefined();
+                if (milestone && taskWithMilestone) {
+                    expect(milestone.start.getTime()).toBeLessThan(taskWithMilestone.start.getTime());
+                }
+
+                done();
+            });
+        });
+
         it("Common milestone test", (done) => {
             dataView = defaultDataViewBuilder.getDataView([
                 VisualData.ColumnType,

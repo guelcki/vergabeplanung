@@ -261,11 +261,6 @@
                     "type": {
                         "bool": true
                     }
-                },
-                "barsRoundedCorners": {
-                    "type": {
-                        "bool": true
-                    }
                 }
             }
         },
