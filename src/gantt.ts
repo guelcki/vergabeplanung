@@ -773,10 +773,6 @@ export class Gantt implements IVisual {
 
         let milestoneDate: Date = parsedDate || fallbackDate;
 
-        if (fallbackEnd && isValidDate(fallbackEnd) && milestoneDate > fallbackEnd) {
-            milestoneDate = fallbackEnd;
-        }
-
         return {
             type: milestoneType,
             date: milestoneDate,
