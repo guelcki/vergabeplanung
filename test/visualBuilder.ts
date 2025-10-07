@@ -182,18 +182,6 @@ export class VisualBuilder extends VisualBuilderBase<VisualClass> {
         return taskLines;
     }
 
-    public get taskDaysOffRect(): HTMLElement[] {
-        const taskDaysOffRect: HTMLElement[] = [];
-        this.tasks.forEach((element: HTMLElement) => {
-            const taskDaysOffRectNode: NodeListOf<HTMLElement> = element.querySelectorAll("path.task-days-off");
-            taskDaysOffRectNode.forEach((element: HTMLElement) => {
-                taskDaysOffRect.push(element);
-            });
-        });
-
-        return taskDaysOffRect;
-    }
-
     public get milestones(): SVGElement[] {
         const taskMilestones: HTMLElement[] = [];
         this.tasks.forEach((element: HTMLElement) => {

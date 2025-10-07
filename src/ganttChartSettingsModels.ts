@@ -40,18 +40,6 @@ import Card = formattingSettings.SimpleCard;
 import Model = formattingSettings.Model;
 
 import IEnumMember = powerbi.IEnumMember;
-import {Day} from "./enums";
-import {MilestoneDataPoint} from "./interfaces";
-
-const dayOfWeekOptions : IEnumMember[] = [
-    { displayName: "Visual_Day_Sunday", value: Day.Sunday },
-    { displayName: "Visual_Day_Monday", value: Day.Monday },
-    { displayName: "Visual_Day_Tuesday", value: Day.Tuesday },
-    { displayName: "Visual_Day_Wednesday", value: Day.Wednesday },
-    { displayName: "Visual_Day_Thursday", value: Day.Thursday },
-    { displayName: "Visual_Day_Friday", value: Day.Friday },
-    { displayName: "Visual_Day_Saturday", value: Day.Saturday }
-]
 
 export const dateTypeOptions : IEnumMember[] = [
     { displayName: "Visual_DateType_Second", value: DateType.Second },
@@ -164,33 +152,6 @@ export class CollapsedTasksUpdateIdCardSettings extends Card {
     name: string = "collapsedTasksUpdateId";
     displayNameKey: string = "Visual_CollapsedTasksUpdateId";
     slices = [this.value];
-}
-
-export class DaysOffCardSettings extends Card {
-
-    show = new formattingSettings.ToggleSwitch({
-        name: "show",
-        displayNameKey: "Visual_Show",
-        value: false
-    });
-
-    fill = new formattingSettings.ColorPicker({
-        name: "fill",
-        displayNameKey: "Visual_Fill",
-        value: { value: "#00B093" }
-    });
-
-    firstDayOfWeek = new formattingSettings.ItemDropdown({
-        name: "firstDayOfWeek",
-        displayNameKey: "Visual_FirstDayOfWeek",
-        items: dayOfWeekOptions,
-        value: dayOfWeekOptions[0]
-    });
-
-    name: string = "daysOff";
-    displayNameKey: string = "Visual_DaysOff";
-    slices = [this.fill, this.firstDayOfWeek];
-    topLevelSlice?: formattingSettings.SimpleSlice<any> = this.show;
 }
 
 export class MilestonesCardSettings extends Card {
@@ -423,7 +384,6 @@ export class GanttChartSettingsModel extends Model {
     generalCardSettings = new GeneralCardSettings();
     collapsedTasksCardSettings = new CollapsedTasksCardSettings();
     collapsedTasksUpdateIdCardSettings = new CollapsedTasksUpdateIdCardSettings();
-    daysOffCardSettings = new DaysOffCardSettings();
     milestonesCardSettings = new MilestonesCardSettings();
     taskLabelsCardSettings = new TaskLabelsCardSettings();
     taskCompletionCardSettings = new TaskCompletionCardSettings();
@@ -432,13 +392,12 @@ export class GanttChartSettingsModel extends Model {
     taskResourceCardSettings = new TaskResourceCardSettings();
     dateTypeCardSettings = new DateTypeCardSettings();
     
-    cards = [this.generalCardSettings, this.collapsedTasksCardSettings, this.collapsedTasksUpdateIdCardSettings, this.daysOffCardSettings,
+    cards = [this.generalCardSettings, this.collapsedTasksCardSettings, this.collapsedTasksUpdateIdCardSettings,
             this.milestonesCardSettings, this.taskLabelsCardSettings, this.taskCompletionCardSettings,
             this.tooltipConfigCardSettings, this.taskConfigCardSettings, this.taskResourceCardSettings, this.dateTypeCardSettings];
 
 
     setLocalizedOptions(localizationManager: ILocalizationManager) {
-        this.setLocalizedDisplayName(dayOfWeekOptions, localizationManager);
         this.setLocalizedDisplayName(shapesOptions, localizationManager);
         this.setLocalizedDisplayName(resourcePositionOptions, localizationManager);
         this.setLocalizedDisplayName(dateTypeOptions, localizationManager);

@@ -26,7 +26,6 @@
 
 import powerbi from "powerbi-visuals-api";
 import {BaseType, select as d3Select} from "d3-selection";
-import {timeDay as d3TimeDay} from "d3-time";
 
 import lodashMinBy from "lodash.minby";
 import lodashMaxBy from "lodash.maxby";
@@ -48,12 +47,12 @@ import {
 import {pixelConverter as PixelConverter} from "powerbi-visuals-utils-typeutils";
 import {valueFormatter} from "powerbi-visuals-utils-formattingutils";
 
-import {Milestone, Task, TaskDaysOff} from "../src/interfaces";
+import {Milestone, Task} from "../src/interfaces";
 import {Gantt as VisualClass} from "../src/gantt";
 import {getRandomHexColor, isValidDate} from "../src/utils";
 
 import {DefaultOpacity, DimmedOpacity} from "../src/behavior";
-import {DateType, Day, MilestoneShape, ResourceLabelPosition} from "../src/enums";
+import {DateType, MilestoneShape, ResourceLabelPosition} from "../src/enums";
 import DataView = powerbi.DataView;
 import PrimitiveValue = powerbi.PrimitiveValue;
 
@@ -63,7 +62,6 @@ import IValueFormatter = valueFormatter.IValueFormatter;
 
 
 const datesAmountForScroll: number = 90;
-const millisecondsInADay: number = 24 * 60 * 60 * 1000;
 
 describe("Gantt", () => {
     let visualBuilder: VisualBuilder;
@@ -1081,95 +1079,6 @@ describe("Gantt", () => {
                 });
             });
 
-        });
-
-        describe("Days off", () => {
-            it("color", (done) => {
-                let color: string = getRandomHexColor();
-                dataView.metadata.objects = {
-                    daysOff: {
-                        show: true,
-                        fill: VisualBuilder.getSolidColorStructuralObject(color)
-                    }
-                };
-
-                fixDataViewDateValuesAggregation(dataView);
-
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    visualBuilder.taskDaysOffRect.forEach(e => {
-                        assertColorsMatch(e.style.fill, color);
-                    });
-
-                    done();
-                });
-            });
-
-            function checkDaysOff(
-                dayForCheck: number,
-                done: () => void): void {
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    visualBuilder.taskDaysOffRect.forEach((e: Element) => {
-                        const isParentTask: boolean = e.hasChildNodes();
-                        let daysOff: TaskDaysOff = e["__data__"].daysOff; // Takes data from an element
-
-                        if (!isParentTask) {
-                            const amountOfWeekendDays: number = daysOff[1];
-
-                            const firstDayOfWeek: Date = new Date(
-                                daysOff[0].getTime() + (amountOfWeekendDays * millisecondsInADay)
-                            );
-
-                            expect(firstDayOfWeek.getDay()).toEqual(dayForCheck);
-                        }
-                    });
-                    done();
-                });
-            }
-
-            for (let day in Day) {
-                it(`Verify day off (${day}) for 'Day' date type`, ((day) => (done) => {
-                    dataView = defaultDataViewBuilder.getDataView();
-
-                    dataView.metadata.objects = {
-                        daysOff: {
-                            show: true,
-                            firstDayOfWeek: day
-                        }
-                    };
-
-                    fixDataViewDateValuesAggregation(dataView);
-
-                    checkDaysOff(+day, done);
-                })(day));
-            }
-
-            it(`Verify end date of task is weekend date`, (done) => {
-                let startDate: Date = new Date(2017, 8, 29); // It's a last day of working week
-                let endDate: Date = new Date(2017, 8, 30);
-
-                defaultDataViewBuilder.valuesStartDate = VisualData.getRandomUniqueDates(
-                    defaultDataViewBuilder.valuesTaskTypeResource.length,
-                    startDate,
-                    endDate
-                );
-                defaultDataViewBuilder.valuesEndDate = defaultDataViewBuilder.valuesStartDate.map(date =>
-                    new Date(date.getTime() + 48 * 60 * 60 * 1000));
-                dataView = defaultDataViewBuilder.getDataView();
-
-                fixDataViewDateValuesAggregation(dataView);
-
-                dataView.metadata.objects = {
-                    dateType: {
-                        type: DateType.Hour
-                    },
-                    daysOff: {
-                        show: true,
-                        firstDayOfWeek: +Day.Monday
-                    }
-                };
-
-                checkDaysOff(+Day.Monday, done);
-            });
         });
 
         describe("Sub tasks", () => {

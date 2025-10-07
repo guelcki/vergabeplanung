@@ -32,12 +32,6 @@ import "./../style/gantt.less";
 
 import {select as d3Select, Selection as d3Selection} from "d3-selection";
 import {ScaleTime as timeScale} from "d3-scale";
-import {
-    timeDay as d3TimeDay,
-    timeHour as d3TimeHour,
-    timeMinute as d3TimeMinute,
-    timeSecond as d3TimeSecond
-} from "d3-time";
 import {nest as d3Nest} from "d3-collection";
 import "d3-transition";
 
@@ -89,8 +83,6 @@ import {
 // behavior
 import {Behavior, BehaviorOptions} from "./behavior";
 import {
-    DayOffData,
-    DaysOffDataForAddition,
     ExtraInformation,
     GanttCalculateScaleAndDomainOptions,
     GanttChartFormatters,
@@ -103,7 +95,6 @@ import {
     MilestoneDataPoint,
     MilestonePath,
     Task,
-    TaskDaysOff,
     TaskTypeMetadata,
     TaskTypes
 } from "./interfaces";
@@ -184,8 +175,6 @@ const MillisecondsInAMonth: number = 30 * MillisecondsInADay;
 const MillisecondsInAYear: number = 365 * MillisecondsInADay;
 const MillisecondsInAQuarter: number = MillisecondsInAYear / 4;
 const PaddingTasks: number = 5;
-const DaysInAWeekend: number = 2;
-const DaysInAWeek: number = 5;
 const DefaultChartLineHeight = 40;
 const TaskColumnName: string = "Task";
 const ParentColumnName: string = "Parent";
@@ -210,7 +199,6 @@ export class Gantt implements IVisual {
     private static TaskRect: ClassAndSelector = createClassAndSelector("task-rect");
     private static TaskMilestone: ClassAndSelector = createClassAndSelector("task-milestone");
     private static TaskProgress: ClassAndSelector = createClassAndSelector("task-progress");
-    private static TaskDaysOff: ClassAndSelector = createClassAndSelector("task-days-off");
     private static TaskResource: ClassAndSelector = createClassAndSelector("task-resource");
     private static TaskLabels: ClassAndSelector = createClassAndSelector("task-labels");
     private static TaskLines: ClassAndSelector = createClassAndSelector("task-lines");
@@ -910,16 +898,6 @@ export class Gantt implements IVisual {
 
             task.end = Gantt.ensureValidEndDate(task.start, task.end);
 
-            if (settings.daysOffCardSettings.show.value) {
-                task.daysOffList = Gantt.calculateDaysOff(
-                    +settings.daysOffCardSettings.firstDayOfWeek?.value?.value,
-                    new Date(task.start.getTime()),
-                    new Date(task.end.getTime())
-                );
-            } else {
-                task.daysOffList = [];
-            }
-
             if (task.parent) {
                 task.visibility = collapsedTasks.indexOf(task.parent) === -1;
             }
@@ -992,7 +970,6 @@ export class Gantt implements IVisual {
             selected: false,
             identity: selectionBuilder.createSelectionId(),
             extraInformation,
-            daysOffList: [],
             Milestones: milestone ? [{
                 type: milestone.type,
                 start: milestone.date,
@@ -1104,7 +1081,6 @@ export class Gantt implements IVisual {
                 color: null,
                 tooltipInfo: null,
                 extraInformation: collapsedTasks.includes(taskParentName) ? extraInformation : null,
-                daysOffList: null,
                 selected: false,
                 identity: selectionBuilder.createSelectionId(),
                 Milestones: [],
@@ -1178,98 +1154,6 @@ export class Gantt implements IVisual {
     }
 
     /**
-     * Calculate days off
-     * @param daysOffDataForAddition Temporary days off data for addition new one
-     * @param firstDayOfWeek First day of working week. From settings
-     * @param date Date for verifying
-     * @param extraCondition Extra condition for handle special case for last date
-     */
-    private static addNextDaysOff(
-        daysOffDataForAddition: DaysOffDataForAddition,
-        firstDayOfWeek: number,
-        date: Date,
-        extraCondition: boolean = false): DaysOffDataForAddition {
-        daysOffDataForAddition.amountOfLastDaysOff = 1;
-        for (let i = DaysInAWeekend; i > 0; i--) {
-            const dateForCheck: Date = new Date(date.getTime() + (i * MillisecondsInADay));
-            let alreadyInDaysOffList = false;
-            daysOffDataForAddition.list.forEach((item) => {
-                const itemDate = item[0];
-                if (itemDate.getFullYear() === date.getFullYear() && itemDate.getMonth() === date.getMonth() && itemDate.getDate() === date.getDate()) {
-                    alreadyInDaysOffList = true;
-                }
-            });
-
-            const isFirstDaysOfWeek = dateForCheck.getDay() === +firstDayOfWeek;
-            const isFirstDayOff = dateForCheck.getDay() === (+firstDayOfWeek + 5) % 7;
-            const isSecondDayOff = dateForCheck.getDay() === (+firstDayOfWeek + 6) % 7;
-            const isPartlyUsed = !/00:00:00/g.test(dateForCheck.toTimeString());
-
-            if (!alreadyInDaysOffList && isFirstDaysOfWeek && (!extraCondition || (extraCondition && isPartlyUsed))) {
-                daysOffDataForAddition.amountOfLastDaysOff = i;
-                daysOffDataForAddition.list.push([
-                    new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0), i
-                ]);
-            }
-
-            // Example: some task starts on Saturday 8:30 and ends on Thursday 8:30,
-            // so it has extra duration and now will end on next Saturday 8:30
-            // --- we need to add days off -- it ends on Monday 8.30
-            if (!alreadyInDaysOffList && (isFirstDayOff || isSecondDayOff) && isPartlyUsed) {
-                const amount = isFirstDayOff ? 2 : 1;
-                daysOffDataForAddition.amountOfLastDaysOff = amount;
-                daysOffDataForAddition.list.push([
-                    new Date(dateForCheck.getFullYear(), dateForCheck.getMonth(), dateForCheck.getDate(), 0, 0, 0), amount
-                ]);
-            }
-        }
-
-        return daysOffDataForAddition;
-    }
-
-    private static isDayOff(date: Date, firstDayOfWeek: number): boolean {
-        const isFirstDayOff = date.getDay() === (+firstDayOfWeek + 5) % 7;
-        const isSecondDayOff = date.getDay() === (+firstDayOfWeek + 6) % 7;
-
-        return isFirstDayOff || isSecondDayOff;
-    }
-
-    private static isOneDay(firstDate: Date, secondDate: Date): boolean {
-        return firstDate.getMonth() === secondDate.getMonth() && firstDate.getFullYear() === secondDate.getFullYear()
-            && firstDate.getDay() === secondDate.getDay();
-    }
-
-    /**
-     * Calculate days off
-     * @param firstDayOfWeek First day of working week. From settings
-     * @param fromDate Start of task
-     * @param toDate End of task
-     */
-    private static calculateDaysOff(
-        firstDayOfWeek: number,
-        fromDate: Date,
-        toDate: Date): DayOffData[] {
-        const tempDaysOffData: DaysOffDataForAddition = {
-            list: [],
-            amountOfLastDaysOff: 0
-        };
-
-        if (Gantt.isOneDay(fromDate, toDate)) {
-            if (!Gantt.isDayOff(fromDate, +firstDayOfWeek)) {
-                return tempDaysOffData.list;
-            }
-        }
-
-        while (fromDate < toDate) {
-            Gantt.addNextDaysOff(tempDaysOffData, firstDayOfWeek, fromDate);
-            fromDate.setDate(fromDate.getDate() + tempDaysOffData.amountOfLastDaysOff);
-        }
-
-        Gantt.addNextDaysOff(tempDaysOffData, firstDayOfWeek, toDate, true);
-        return tempDaysOffData.list;
-    }
-
-    /**
      * Convert the dataView to view model
      * @param dataView The data Model
      * @param host Host object
@@ -1336,7 +1220,6 @@ export class Gantt implements IVisual {
             settings.dateTypeCardSettings.axisTextColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.axisColor.value.value);
             settings.dateTypeCardSettings.todayColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.todayColor.value.value);
 
-            settings.daysOffCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.daysOffCardSettings.fill.value.value);
             settings.taskConfigCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskConfigCardSettings.fill.value.value);
             settings.taskLabelsCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskLabelsCardSettings.fill.value.value);
             settings.taskResourceCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskResourceCardSettings.fill.value.value);
@@ -1756,21 +1639,6 @@ export class Gantt implements IVisual {
     private setTickColor(
         timestamp: number,
         defaultColor: string): string {
-        const tickTime = new Date(timestamp);
-        const firstDayOfWeek: string = this.viewModel.settings.daysOffCardSettings.firstDayOfWeek?.value?.value.toString();
-        const color: string = this.viewModel.settings.daysOffCardSettings.fill.value.value;
-        if (this.viewModel.settings.daysOffCardSettings.show.value) {
-            const dateForCheck: Date = new Date(tickTime.getTime());
-            for (let i = 0; i <= DaysInAWeekend; i++) {
-                if (dateForCheck.getDay() === +firstDayOfWeek) {
-                    return !i
-                        ? defaultColor
-                        : color;
-                }
-                dateForCheck.setDate(dateForCheck.getDate() + 1);
-            }
-        }
-
         return defaultColor;
     }
 
@@ -2079,7 +1947,6 @@ export class Gantt implements IVisual {
         const taskSelection: Selection<Task> = this.taskSelectionRectRender(taskGroupSelectionMerged);
         this.taskMainRectRender(taskSelection, taskConfigHeight, generalBarsRoundedCorners);
         this.taskProgressRender(taskSelection);
-        this.taskDaysOffRender(taskSelection, taskConfigHeight);
         this.MilestonesRender(taskSelection, taskConfigHeight);
         this.taskResourceRender(taskSelection, taskConfigHeight);
 
@@ -2389,95 +2256,6 @@ export class Gantt implements IVisual {
     }
 
     /**
-     * Render days off rects
-     * @param taskSelection Task Selection
-     * @param taskConfigHeight Task heights from settings
-     */
-    private taskDaysOffRender(
-        taskSelection: Selection<Task>,
-        taskConfigHeight: number): void {
-
-        const taskDaysOffColor: string = this.viewModel.settings.daysOffCardSettings.fill.value.value;
-        const taskDaysOffShow: boolean = this.viewModel.settings.daysOffCardSettings.show.value;
-
-        taskSelection
-            .selectAll(Gantt.TaskDaysOff.selectorName)
-            .remove();
-
-        if (taskDaysOffShow) {
-            const tasksDaysOff: Selection<TaskDaysOff, Task> = taskSelection
-                .selectAll(Gantt.TaskDaysOff.selectorName)
-                .data((d: Task) => {
-                    const tasksDaysOff: TaskDaysOff[] = [];
-
-                    if (!d.children && d.daysOffList) {
-                        for (let i = 0; i < d.daysOffList.length; i++) {
-                            const currentDaysOffItem: DayOffData = d.daysOffList[i];
-                            const startOfLastDay: Date = new Date(+d.end);
-                            startOfLastDay.setHours(0, 0, 0);
-                            if (currentDaysOffItem[0].getTime() < startOfLastDay.getTime()) {
-                                tasksDaysOff.push({
-                                    id: d.index,
-                                    daysOff: d.daysOffList[i]
-                                });
-                            }
-                        }
-                    }
-
-                    return tasksDaysOff;
-                });
-
-            const tasksDaysOffMerged = tasksDaysOff
-                .enter()
-                .append("path")
-                .merge(tasksDaysOff);
-
-            tasksDaysOffMerged.classed(Gantt.TaskDaysOff.className, true);
-
-            const getTaskRectDaysOffWidth = (task: TaskDaysOff) => {
-                let width = 0;
-
-                if (this.hasNotNullableDates) {
-                    const startDate: Date = task.daysOff[0];
-                    const startTime: number = startDate.getTime();
-                    const endDate: Date = new Date(startTime + (task.daysOff[1] * MillisecondsInADay));
-
-                    width = Gantt.taskDurationToWidth(startDate, endDate);
-                }
-
-                return width;
-            };
-
-            const drawTaskRectDaysOff = (task: TaskDaysOff) => {
-                let x = this.hasNotNullableDates ? Gantt.TimeScale(task.daysOff[0]) : 0;
-                const y: number = Gantt.getBarYCoordinate(task.id, taskConfigHeight) + (task.id + 1) * this.getResourceLabelTopMargin(),
-                    height: number = Gantt.getBarHeight(taskConfigHeight),
-                    radius: number = this.viewModel.settings.generalCardSettings.barsRoundedCorners.value ? Gantt.RectRound : 0,
-                    width: number = getTaskRectDaysOffWidth(task);
-
-                if (width < radius) {
-                    x = x - width / 2;
-                }
-
-                if (this.formattingSettings.generalCardSettings.barsRoundedCorners.value && width >= 2 * radius) {
-                    return drawRoundedRectByPath(x, y, width, height, radius);
-                }
-
-                return drawNotRoundedRectByPath(x, y, width, height);
-            };
-
-            tasksDaysOffMerged
-                .attr("d", (task: TaskDaysOff) => drawTaskRectDaysOff(task))
-                .style("fill", taskDaysOffColor)
-                .attr("width", (task: TaskDaysOff) => getTaskRectDaysOffWidth(task));
-
-            tasksDaysOff
-                .exit()
-                .remove();
-        }
-    }
-
-    /**
      * Render task progress rect
      * @param taskSelection Task Selection
      */
@@ -2489,7 +2267,7 @@ export class Gantt implements IVisual {
         const taskProgress: Selection<any> = taskSelection
             .selectAll(Gantt.TaskProgress.selectorName)
             .data((d: Task) => {
-                const taskProgressPercentage = this.getDaysOffTaskProgressPercent(d);
+                const taskProgressPercentage = d.completion;
                 // logic used for grouped tasks, when there are several bars related to one category
                 if (index === d.index) {
                     groupedTaskIndex++;
@@ -2710,14 +2488,6 @@ export class Gantt implements IVisual {
         const taskYCoordinate = taskConfigHeight * taskIndex;
         const barHeight = Gantt.getBarHeight(taskConfigHeight);
         return taskYCoordinate + (barHeight + Gantt.BarHeightMargin - (taskConfigHeight - fontSize) / Gantt.ChartLineHeightDivider);
-    }
-
-    /**
-    * Get completion percent when days off feature is on
-    * @param task All task attributes
-    */
-    private getDaysOffTaskProgressPercent(task: Task) {
-        return task.completion;
     }
 
     /**

@@ -296,29 +296,6 @@
                 }
             }
         },
-        "daysOff": {
-            "properties": {
-                "show": {
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "fill": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "firstDayOfWeek": {
-                    "type": {
-                        "text": true
-                    }
-                }
-            }
-        },
         "milestones": {
             "properties": {
                 "fill": {

@@ -48,18 +48,6 @@ import IMargin = SVGUtil.IMargin;
 
 import { GanttChartSettingsModel } from "./ganttChartSettingsModels";
 
-export type DayOffData = [Date, number];
-
-export interface DaysOffDataForAddition {
-    list: DayOffData[];
-    amountOfLastDaysOff: number;
-}
-
-export interface TaskDaysOff {
-    id: number;
-    daysOff: DayOffData;
-}
-
 export interface ExtraInformation {
     displayName: string;
     value: string;
@@ -80,7 +68,6 @@ export interface Task extends SelectableDataPoint {
     color: string;
     tooltipInfo: VisualTooltipDataItem[];
     extraInformation: ExtraInformation[];
-    daysOffList: DayOffData[];
     highlight?: boolean;
     Milestones?: Milestone[];
 }
