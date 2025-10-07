@@ -153,8 +153,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnStartDate,
                 VisualData.ColumnEndDate,
-                VisualData.ColumnResource,
-                VisualData.ColumnCompletePercentage]);
+                VisualData.ColumnResource]);
 
             visualBuilder.updateRenderTimeout(dataView, () => {
                 let body = d3Select(visualBuilder.element);
@@ -171,8 +170,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnEndDate,
-                VisualData.ColumnResource,
-                VisualData.ColumnCompletePercentage]);
+                VisualData.ColumnResource]);
 
             visualBuilder.updateRenderTimeout(dataView, () => {
                 let tasks = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
@@ -190,8 +188,7 @@ describe("Gantt", () => {
                 VisualData.ColumnType,
                 VisualData.ColumnTask,
                 VisualData.ColumnStartDate,
-                VisualData.ColumnEndDate,
-                VisualData.ColumnCompletePercentage]);
+                VisualData.ColumnEndDate]);
 
             fixDataViewDateValuesAggregation(dataView);
 
@@ -203,64 +200,6 @@ describe("Gantt", () => {
                 done();
             });
         });
-
-        it("Task Completion is Missing, not shown on dom", (done) => {
-            dataView = defaultDataViewBuilder.getDataView([
-                VisualData.ColumnType,
-                VisualData.ColumnTask,
-                VisualData.ColumnStartDate,
-                VisualData.ColumnEndDate,
-                VisualData.ColumnResource]);
-
-            fixDataViewDateValuesAggregation(dataView);
-
-            visualBuilder.updateRenderTimeout(dataView, () => {
-                let progressOfTasks = d3Select(visualBuilder.element).selectAll(".task-progress").nodes();
-                let returnTasks = grep(progressOfTasks);
-
-                expect(progressOfTasks.length).toEqual(returnTasks.length);
-                done();
-            });
-        });
-
-        // it("Task Completion width is equal task width", (done) => {
-        //     defaultDataViewBuilder.valuesCompletePercentage = VisualData.getRandomUniqueNumbers(
-        //         defaultDataViewBuilder.valuesTaskTypeResource.length, 0, 100
-        //     );
-
-        //     defaultDataViewBuilder.valuesCompletePercentage.forEach((value, index) => {
-        //         defaultDataViewBuilder.valuesCompletePercentage[index] = value * 0.01;
-        //     });
-
-        //     dataView = defaultDataViewBuilder.getDataView([
-        //         VisualData.ColumnTask,
-        //         VisualData.ColumnType,
-        //         VisualData.ColumnStartDate,
-        //         VisualData.ColumnEndDate,
-        //         VisualData.ColumnCompletePercentage,
-        //         VisualData.ColumnResource]);
-
-
-        //     fixDataViewDateValuesAggregation(dataView);
-
-        //     visualBuilder.updateRenderTimeout(dataView, () => {
-        //         let progressOfTasks = visualBuilder.taskProgress;
-
-        //         let skippedParents: number = 0;
-        //         progressOfTasks.forEach((e, i) => {
-        //             let percent: number = defaultDataViewBuilder.valuesCompletePercentage[i - skippedParents];
-        //             let widthOfTask: number = parseFloat((visualBuilder.taskRect[i - skippedParents]).getAttribute("width") ?? "0");
-        //             let widthOfProgressTask: number = parseFloat(e.getAttribute("width") ?? "0");
-
-        //             const widthOfTaskFormatted = Math.floor((widthOfTask * percent)).toFixed(2);
-        //             const widthOfProgressTaskFormatted = Math.floor(widthOfProgressTask).toFixed(2);
-        //             expect(widthOfProgressTaskFormatted).toEqual(widthOfTaskFormatted);
-        //         });
-
-        //         done();
-        //     });
-        // });
-
         it("Verify task labels have tooltips", (done) => {
             defaultDataViewBuilder.valuesTaskTypeResource.forEach(x => x[1] = (x[1] + " ").repeat(5).trim());
             dataView = defaultDataViewBuilder.getDataView([
@@ -351,13 +290,11 @@ describe("Gantt", () => {
                 name: randomNumber,
                 start: new Date(),
                 end: new Date(),
-                completion: randomNumber,
                 extraInformation: []
             };
 
             const formatters = {
-                startDateFormatter: jasmine.createSpyObj("startDateFormatter", ["format"]),
-                completionFormatter: jasmine.createSpyObj("completionFormatter", ["format"])
+                startDateFormatter: jasmine.createSpyObj("startDateFormatter", ["format"])
             };
             const localizationManager = visualBuilder.visualHost.createLocalizationManager();
 
@@ -432,52 +369,6 @@ describe("Gantt", () => {
                     expect(collapseArrow.length).toBe(0);
                     done();
                 });
-            });
-        });
-
-        describe("Verify tooltips have no completion info", () => {
-            function checkCompletionEqualNull(done: () => void) {
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    let tasks = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-                    for (let task of tasks) {
-                        for (let tooltipInfo of task.tooltipInfo) {
-                            if (tooltipInfo.displayName === VisualData.ColumnCompletePercentage) {
-                                expect(tooltipInfo.value).toBeNull();
-                            }
-                        }
-                    }
-
-                    done();
-                });
-            }
-
-            it("TaskCompletion setting is switched off", (done) => {
-                dataView = defaultDataViewBuilder.getDataView([
-                    VisualData.ColumnTask,
-                    VisualData.ColumnStartDate,
-                    VisualData.ColumnEndDate,
-                    VisualData.ColumnCompletePercentage]);
-
-                fixDataViewDateValuesAggregation(dataView);
-
-                dataView.metadata.objects = {
-                    taskCompletion: {
-                        show: false
-                    }
-                };
-
-                checkCompletionEqualNull(done);
-            });
-
-            it("Completion data unavailable", (done) => {
-                dataView = defaultDataViewBuilder.getDataView([
-                    VisualData.ColumnTask,
-                    VisualData.ColumnStartDate,
-                    VisualData.ColumnEndDate]);
-
-                fixDataViewDateValuesAggregation(dataView);
-
-                checkCompletionEqualNull(done);
             });
         });
 
@@ -1132,30 +1023,6 @@ describe("Gantt", () => {
                 fixDataViewDateValuesAggregation(dataView);
             });
 
-            it("parent completion by children", (done) => {
-                dataView.metadata.objects = {
-                    subTasks: {
-                        parentCompletionByChildren: true
-                    }
-                };
-
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    let tasks = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-                    let { parents, children } = getChildrenAndParents(tasks);
-
-                    parents.forEach((parent: Task) => {
-                        const childrenAverageCompletion: number = children[parent.name]
-                            .reduce((prevValue, currentTask) => prevValue + currentTask.completion, 0) /
-                            children[parent.name].length;
-
-                        expect(parent.completion).toEqual(childrenAverageCompletion);
-
-                    });
-
-                    done();
-                });
-            });
-
             it("sorting both parents and subtasks (tasks asc)", (done) => {
                 dataView.metadata.columns[1].sort = 1; // 1 - ascending order
 
@@ -1384,32 +1251,6 @@ describe("Gantt", () => {
             });
         });
 
-        // describe("Task Completion", () => {
-        //     it("opacity", (done) => {
-        //         dataView.metadata.objects = {
-        //             taskCompletion: {
-        //                 show: true
-        //             }
-        //         };
-
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             debugger;
-        //             visualBuilder.taskProgress.forEach(e => {
-        //                 expect(e.style.opacity).toBe(VisualClass["TaskOpacity"].toString());
-        //             });
-
-        //             let tasks = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
-        //             visualBuilder.taskRect.forEach((e, i) => {
-        //                 // if completion is null (no info about completion) - task expected to be completed
-        //                 const expectedOpacity = tasks[i].completion ? VisualClass["NotCompletedTaskOpacity"].toString() : VisualClass["TaskOpacity"].toString();
-        //                 expect(e.style.opacity).toBe(expectedOpacity);
-        //             });
-
-        //             done();
-        //         });
-        //     });
-        // });
-
         describe("Task Settings", () => {
             it("color", (done) => {
                 dataView = defaultDataViewBuilder.getDataView([
@@ -1622,8 +1463,7 @@ describe("Gantt", () => {
             axisTicksText: SVGElement[],
             axisTicksLine: SVGElement[],
             taskLabels: HTMLElement[],
-            chartLine: HTMLElement[],
-            taskProgress: HTMLElement[];
+            chartLine: HTMLElement[];
 
         beforeEach(() => {
             visualBuilder.visualHost.colorPalette.isHighContrast = true;
@@ -1632,7 +1472,6 @@ describe("Gantt", () => {
             visualBuilder.visualHost.colorPalette.foreground = { value: foregroundColor };
 
             taskRect = visualBuilder.taskRect;
-            taskProgress = visualBuilder.taskProgress;
             taskLineRect = visualBuilder.taskLineRect;
 
             axisTicksLine = visualBuilder.axisTicksLine;
@@ -1646,7 +1485,6 @@ describe("Gantt", () => {
                 expect(isColorAppliedToElements(chartLine, foregroundColor, "fill"));
                 expect(isColorAppliedToElements(axisTicksLine, foregroundColor, "stroke"));
                 expect(isColorAppliedToElements(axisTicksText, foregroundColor, "fill"));
-                expect(isColorAppliedToElements(taskProgress, foregroundColor, "fill"));
                 expect(isColorAppliedToElements(taskLabels, foregroundColor, "fill"));
                 done();
             });
@@ -1659,11 +1497,10 @@ describe("Gantt", () => {
             });
         });
 
-        it("should not use fill for task rects", (done) => {
+        it("should apply high contrast colors to task rects", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                expect(isColorAppliedToElements(taskRect, undefined, "fill"));
+                expect(isColorAppliedToElements(taskRect, foregroundColor, "fill"));
                 expect(isColorAppliedToElements(taskRect, foregroundColor, "stroke"));
-                expect(isColorAppliedToElements(taskRect, backgroundColor, "fill"));
                 done();
             });
         });

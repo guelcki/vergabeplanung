@@ -31,7 +31,6 @@ export enum GanttRole {
     Parent = "Parent",
     StartDate = "StartDate",
     EndDate = "EndDate",
-    Completion = "Completion",
     Resource = "Resource",
     Milestones = "Milestones",
     ExtraInformation = "ExtraInformation",

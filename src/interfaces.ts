@@ -57,7 +57,6 @@ export interface Task extends SelectableDataPoint {
     index: number;
     name: string;
     start: Date;
-    completion: number;
     resource: string;
     end: Date;
     parent: string;
@@ -80,7 +79,6 @@ export interface GroupedTask {
 
 export interface GanttChartFormatters {
     startDateFormatter: IValueFormatter;
-    completionFormatter: IValueFormatter;
 }
 
 export interface GanttViewModel {
@@ -131,11 +129,6 @@ export interface Line {
     x2: number;
     y2: number;
     tooltipInfo: VisualTooltipDataItem[];
-}
-
-export interface LinearStop {
-    completion: number;
-    color: string;
 }
 
 export interface Milestone {

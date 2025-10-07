@@ -229,26 +229,6 @@ export class TaskLabelsCardSettings extends Card {
     topLevelSlice?: formattingSettings.SimpleSlice<any> = this.show;
 }
 
-export class TaskCompletionCardSettings extends Card {
-
-    show = new formattingSettings.ToggleSwitch({
-        name: "show",
-        displayNameKey: "Visual_Show",
-        value: true
-    });
-
-    maxCompletion = new formattingSettings.NumUpDown({
-        name: "maxCompletion",
-        displayNameKey: "Visual_MaxCompletion",
-        value: undefined
-    });
-
-    name: string = "taskCompletion";
-    displayNameKey: string = "Visual_TaskCompletion";
-    slices = [this.maxCompletion];
-    topLevelSlice?: formattingSettings.SimpleSlice<any> = this.show;
-}
-
 export class TooltipConfigCardSettings extends Card {
 
     dateFormat = new formattingSettings.TextInput({
@@ -270,7 +250,7 @@ export class TaskConfigCardSettings extends Card {
         displayNameKey: "Visual_TaskSettings_Color",
         description: "This ONLY takes effect when you have no legend specified",
         descriptionKey: "Visual_Description_TaskSettings_Color",
-        value: { value: "#303030" }
+        value: { value: "#838383" }
     });
 
     height = new formattingSettings.NumUpDown({
@@ -379,14 +359,13 @@ export class GanttChartSettingsModel extends Model {
     collapsedTasksUpdateIdCardSettings = new CollapsedTasksUpdateIdCardSettings();
     milestonesCardSettings = new MilestonesCardSettings();
     taskLabelsCardSettings = new TaskLabelsCardSettings();
-    taskCompletionCardSettings = new TaskCompletionCardSettings();
     tooltipConfigCardSettings = new TooltipConfigCardSettings();
     taskConfigCardSettings = new TaskConfigCardSettings();
     taskResourceCardSettings = new TaskResourceCardSettings();
     dateTypeCardSettings = new DateTypeCardSettings();
     
     cards = [this.generalCardSettings, this.collapsedTasksCardSettings, this.collapsedTasksUpdateIdCardSettings,
-            this.milestonesCardSettings, this.taskLabelsCardSettings, this.taskCompletionCardSettings,
+            this.milestonesCardSettings, this.taskLabelsCardSettings,
             this.tooltipConfigCardSettings, this.taskConfigCardSettings, this.taskResourceCardSettings, this.dateTypeCardSettings];
 
 

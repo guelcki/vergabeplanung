@@ -26,20 +26,6 @@
             "kind": "Measure"
         },
         {
-            "name": "Completion",
-            "displayName": "% Completion",
-            "displayNameKey": "Role_Completion",
-            "kind": "Measure",
-            "requiredTypes": [
-                {
-                    "numeric": true
-                },
-                {
-                    "integer": true
-                }
-            ]
-        },
-        {
             "name": "Resource",
             "displayName": "Resource",
             "displayNameKey": "Role_Resource",
@@ -72,10 +58,6 @@
                         "min": 0,
                         "max": 1
                     },
-                    "Completion": {
-                        "min": 0,
-                        "max": 0
-                    },
                     "Resource": {
                         "min": 0,
                         "max": 0
@@ -106,10 +88,6 @@
                         "min": 0,
                         "max": 0
                     },
-                    "Completion": {
-                        "min": 0,
-                        "max": 0
-                    },
                     "Resource": {
                         "min": 0,
                         "max": 0
@@ -137,10 +115,6 @@
                         "max": 1
                     },
                     "EndDate": {
-                        "min": 0,
-                        "max": 1
-                    },
-                    "Completion": {
                         "min": 0,
                         "max": 1
                     },
@@ -173,10 +147,6 @@
                     "EndDate": {
                         "min": 0,
                         "max": 0
-                    },
-                    "Completion": {
-                        "min": 0,
-                        "max": 1
                     },
                     "Resource": {
                         "min": 0,
@@ -232,11 +202,6 @@
                         {
                             "for": {
                                 "in": "EndDate"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "Completion"
                             }
                         }
                     ]
@@ -349,20 +314,6 @@
                     }
                 },
                 "width": {
-                    "type": {
-                        "numeric": true
-                    }
-                }
-            }
-        },
-        "taskCompletion": {
-            "properties": {
-                "show": {
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "maxCompletion": {
                     "type": {
                         "numeric": true
                     }

@@ -226,18 +226,6 @@ export class VisualBuilder extends VisualBuilderBase<VisualClass> {
         return taskResources;
     }
 
-    public get taskProgress(): HTMLElement[] {
-        const taskProgress: HTMLElement[] = [];
-        this.tasks.forEach((element: HTMLElement) => {
-            const progressNode: NodeListOf<HTMLElement> = element.querySelectorAll("linearGradient.task-progress");
-            progressNode.forEach((element: HTMLElement) => {
-                taskProgress.push(element);
-            });
-        });
-
-        return taskProgress;
-    }
-
     public get legendGroup(): HTMLElement {
         return this.element.querySelector<HTMLElement>('.legend #legendGroup') as HTMLElement;
     }

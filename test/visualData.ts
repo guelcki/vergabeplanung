@@ -44,7 +44,6 @@ export class VisualData extends TestDataViewBuilder {
     public static ColumnStartDate: string = "StartDate";
     public static ColumnEndDate: string = "EndDate";
     public static ColumnResource: string = "Resource";
-    public static ColumnCompletePercentage: string = "CompletePercentage";
     public static ColumnExtraInformation: string = "Description";
     public static ColumnParent: string = "Parent";
     public static ColumnExtraInformationDates: string = "DescriptionDates";
@@ -81,7 +80,6 @@ export class VisualData extends TestDataViewBuilder {
     public valuesSpanInDays = VisualData.getRandomUniqueNumbers(this.valuesTaskTypeResource.length, 3, 40);
     public valuesEndDate = this.valuesStartDate.map((start, idx) =>
         new Date(start.getTime() + this.valuesSpanInDays[idx] * 24 * 60 * 60 * 1000));
-    public valuesCompletePrecntege = VisualData.getRandomUniqueNumbers(this.valuesTaskTypeResource.length);
     public valuesExtraInformation = VisualData.getTexts(this.valuesTaskTypeResource, "Description");
     public valuesExtraInformationDates = VisualData.getRandomUniqueDates(this.valuesTaskTypeResource.length, new Date(2015, 7, 0), new Date(2017, 7, 0));
 
@@ -108,23 +106,6 @@ export class VisualData extends TestDataViewBuilder {
         return result;
     }
 
-    public generateHighLightedValues(length: number, highLightedElementNumber?: number): number[] {
-        let array: any[] = [];
-        for (let i: number = 0; i < length; i++) {
-            array[i] = null;
-        }
-        if (highLightedElementNumber == undefined)
-            return array;
-
-        if (highLightedElementNumber >= length || highLightedElementNumber < 0) {
-            array[0] = getRandomNumbers(this.valuesCompletePrecntege.length, 10, 100)[0];
-        } else {
-            array[highLightedElementNumber] = getRandomNumbers(this.valuesCompletePrecntege.length, 10, 100)[0];
-        }
-
-        return array;
-    }
-
     public getDataView(columnNames?: string[], withMilestones?: boolean, withHighlights?: boolean): DataView {    
         let categoriesColumns = this.getCategoryColumns();
 
@@ -141,15 +122,7 @@ export class VisualData extends TestDataViewBuilder {
             categoriesColumns.push(milestoneCategoriesColumn);
         }
 
-        let highlights: number[] = [];
-        if (withHighlights)
-        {
-            let highLightedElementNumber: number = Math.round(getRandomNumber(0, this.valuesCompletePrecntege.length - 1));
-            let highlightedValuesCount: number = this.valuesCompletePrecntege.length;
-            highlights = this.generateHighLightedValues(highlightedValuesCount, highLightedElementNumber);
-        }
-
-        const valuesColumns = this.getValuesColumns(highlights);
+        const valuesColumns = this.getValuesColumns([]);
 
         return this.createCategoricalDataViewBuilder(categoriesColumns, valuesColumns, columnNames).build();
     }
@@ -163,15 +136,6 @@ export class VisualData extends TestDataViewBuilder {
                     roles: {[GanttRole.EndDate]: true}
                 },
                 values: this.valuesEndDate
-            },
-            {
-                source: {
-                    displayName: VisualData.ColumnCompletePercentage,
-                    type: ValueType.fromDescriptor({numeric: true}),
-                    roles: {[GanttRole.Completion]: true}
-                },
-                values: this.valuesCompletePrecntege,
-                highlights: highlights.length > 0 ? highlights : undefined
             }
         ]
         return valuesColumns;
@@ -232,31 +196,4 @@ export class VisualData extends TestDataViewBuilder {
         return categoriesColumns;
     }
 
-    public getDataViewWithHighlights(): DataView {
-        const categoriesColumns: TestDataViewBuilderCategoryColumnOptions[] = this.getCategoryColumns();
-
-        let highlightedElementIndex: number = Math.round(getRandomNumber(0, this.valuesCompletePrecntege.length - 1));
-
-        const valuesColumns: DataViewBuilderValuesColumnOptions[] = [
-            {
-                source: {
-                    displayName: VisualData.ColumnEndDate,
-                    type: ValueType.fromDescriptor({dateTime: true}),
-                    roles: {[GanttRole.EndDate]: true}
-                },
-                values: this.valuesEndDate
-            },
-            {
-                source: {
-                    displayName: VisualData.ColumnCompletePercentage,
-                    type: ValueType.fromDescriptor({numeric: true}),
-                    roles: {[GanttRole.Completion]: true}
-                },
-                values: this.valuesCompletePrecntege,
-                highlights: this.valuesCompletePrecntege.map((value, index) => index === highlightedElementIndex ? value : null)
-            }
-        ];
-
-        return this.createCategoricalDataViewBuilder(categoriesColumns, valuesColumns, undefined).build();
-    }
 }
