@@ -58,6 +58,8 @@ export interface Task extends SelectableDataPoint {
     name: string;
     start: Date;
     resource: string;
+    isTimeCritical: boolean;
+    timeCriticalSegments: TimeCriticalSegment[];
     end: Date;
     parent: string;
     children: Task[];
@@ -152,4 +154,9 @@ export interface MilestoneDataPoint {
 
 export interface MilestoneData {
     dataPoints: MilestoneDataPoint[];
+}
+
+export interface TimeCriticalSegment {
+    start: Date;
+    end: Date;
 }

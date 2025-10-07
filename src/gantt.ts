@@ -95,7 +95,8 @@ import {
     MilestonePath,
     Task,
     TaskTypeMetadata,
-    TaskTypes
+    TaskTypes,
+    TimeCriticalSegment
 } from "./interfaces";
 import {GanttColumns} from "./columns";
 import {
@@ -239,6 +240,7 @@ export class Gantt implements IVisual {
         BarMargin: 2,
         ResourceWidth: 100,
         TaskColor: "#838383",
+        SignalColor: "#FF341D",
         MilestoneFillColor: "#FFFA94",
         TaskLineColor: "#ccc",
         CollapseAllColor: "#000",
@@ -782,6 +784,63 @@ export class Gantt implements IVisual {
         };
     }
 
+    private static parseTimeCriticalValue(value: PrimitiveValue): { isCritical: boolean | null; invalidValue?: string } {
+        if (value === null || typeof value === "undefined") {
+            return { isCritical: null };
+        }
+
+        if (typeof value === "boolean") {
+            return { isCritical: value };
+        }
+
+        const rawValue: string = String(value);
+        const normalized: string = rawValue.trim().toLowerCase();
+
+        if (!normalized) {
+            return { isCritical: null };
+        }
+
+        if (normalized === "ja") {
+            return { isCritical: true };
+        }
+
+        if (normalized === "nein") {
+            return { isCritical: false };
+        }
+
+        const displayValue = rawValue.trim() || rawValue;
+
+        return {
+            isCritical: null,
+            invalidValue: displayValue
+        };
+    }
+
+    private static calculateTimeCriticalSegments(start: Date, end: Date, milestone: Date | null): TimeCriticalSegment[] {
+        if (!isValidDate(start) || !isValidDate(end) || end.getTime() <= start.getTime()) {
+            return [];
+        }
+
+        if (!milestone || !isValidDate(milestone)) {
+            return [];
+        }
+
+        if (milestone.getTime() > end.getTime()) {
+            return [];
+        }
+
+        const segmentStart = milestone.getTime() <= start.getTime() ? start : milestone;
+
+        if (segmentStart.getTime() >= end.getTime()) {
+            return [];
+        }
+
+        return [{
+            start: segmentStart,
+            end
+        }];
+    }
+
     /**
      * Create task objects dataView
      * @param dataView The data Model.
@@ -821,6 +880,7 @@ export class Gantt implements IVisual {
         const sortingOptions: SortingOptions = Gantt.getSortingOptions(dataView);
 
         const collapsedTasks: string[] = JSON.parse(settings.collapsedTasksCardSettings.list.value);
+        const invalidTimeCriticalEntries: { value: string; taskName: string }[] = [];
 
         values.Task.forEach((categoryValue: PrimitiveValue, index: number) => {
             const selectionBuilder: ISelectionIdBuilder = host
@@ -837,7 +897,7 @@ export class Gantt implements IVisual {
                 extraInformation,
                 highlight,
                 task
-            } = this.createTask(values, index, hasHighlights, categoricalValues, color, categoryValue, endDate, taskType, selectionBuilder);
+            } = this.createTask(values, index, hasHighlights, categoricalValues, color, categoryValue, endDate, taskType, selectionBuilder, invalidTimeCriticalEntries);
 
             if (taskParentName) {
                 Gantt.addTaskToParentTask(
@@ -857,6 +917,23 @@ export class Gantt implements IVisual {
 
             tasks.push(task);
         });
+
+        if (invalidTimeCriticalEntries.length) {
+            const maxExamples = 5;
+            const examples = invalidTimeCriticalEntries.slice(0, maxExamples)
+                .map(({ taskName, value }) => {
+                    const resolvedTaskName = taskName && String(taskName).trim().length ? String(taskName) : "(ohne Name)";
+                    const sanitizedValue = typeof value === "string" ? value.trim() : value;
+                    return `${resolvedTaskName}: "${sanitizedValue}"`;
+                })
+                .join("; ");
+            const extraCount = invalidTimeCriticalEntries.length > maxExamples
+                ? `; … (${invalidTimeCriticalEntries.length - maxExamples} weitere)`
+                : "";
+            host.displayWarningIcon(
+                "Ungültiger Wert in \"Terminkritisch?\"",
+                `Erlaubt sind \"ja\" oder \"nein\" (Groß-/Kleinschreibung egal). Ungültige Eingaben: ${examples}${extraCount}.`);
+        }
 
         if (values.Parent) {
             tasks = Gantt.sortTasksWithParents(tasks, sortingOptions);
@@ -909,7 +986,8 @@ export class Gantt implements IVisual {
         categoryValue: string | number | Date | boolean,
         endDate: Date,
         taskType: TaskTypeMetadata,
-        selectionBuilder: powerbi.visuals.ISelectionIdBuilder) {
+        selectionBuilder: powerbi.visuals.ISelectionIdBuilder,
+        invalidTimeCriticalEntries: { value: string; taskName: string }[]) {
         const resource: string = (values.Resource && values.Resource[index] as string) || "";
         const taskParentName: string = (values.Parent && values.Parent[index] as string) || null;
         const milestoneRaw: PrimitiveValue = values.Milestones ? values.Milestones[index] : null;
@@ -922,6 +1000,7 @@ export class Gantt implements IVisual {
         resolvedEndDate = Gantt.ensureValidEndDate(startDate, resolvedEndDate);
 
         const milestone = Gantt.parseMilestoneValue(milestoneRaw, startDate, resolvedEndDate);
+        const milestoneOriginalDate = Gantt.parseDateValue(milestoneRaw);
 
         const extraInformation: ExtraInformation[] = this.getExtraInformationFromValues(values, index);
 
@@ -931,9 +1010,24 @@ export class Gantt implements IVisual {
             if (notNullIndex != -1) highlight = <number>categoricalValues[notNullIndex].highlights[index];
         }
 
+        const timeCriticalEvaluation = Gantt.parseTimeCriticalValue(values.IsCritical ? values.IsCritical[index] : null);
+        if (timeCriticalEvaluation.invalidValue) {
+            invalidTimeCriticalEntries.push({
+                value: timeCriticalEvaluation.invalidValue,
+                taskName: categoryValue !== undefined && categoryValue !== null ? String(categoryValue) : ""
+            });
+        }
+
+        const isTimeCritical: boolean = timeCriticalEvaluation.isCritical === true;
+        const timeCriticalSegments: TimeCriticalSegment[] = isTimeCritical
+            ? Gantt.calculateTimeCriticalSegments(startDate, resolvedEndDate, milestoneOriginalDate)
+            : [];
+
         const task: Task = {
             color,
             resource,
+            isTimeCritical,
+            timeCriticalSegments,
             index: null,
             name: categoryValue as string,
             start: startDate,
@@ -1025,6 +1119,8 @@ export class Gantt implements IVisual {
                 name: taskParentName,
                 start: null,
                 resource: null,
+                isTimeCritical: false,
+                timeCriticalSegments: [],
                 end: null,
                 parent: null,
                 children: [task],
@@ -1169,6 +1265,7 @@ export class Gantt implements IVisual {
             settings.dateTypeCardSettings.axisTextColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.axisColor.value.value);
             settings.dateTypeCardSettings.todayColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.todayColor.value.value);
 
+            settings.taskConfigCardSettings.criticalFill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskConfigCardSettings.criticalFill.value.value);
             settings.taskConfigCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskConfigCardSettings.fill.value.value);
             settings.taskLabelsCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskLabelsCardSettings.fill.value.value);
             settings.taskResourceCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskResourceCardSettings.fill.value.value);
@@ -1918,6 +2015,11 @@ export class Gantt implements IVisual {
                         }
                     });
 
+                    if (firstTask) {
+                        firstTask.isTimeCritical = false;
+                        firstTask.timeCriticalSegments = [];
+                    }
+
                     groupedTask.tasks = firstTask && [firstTask] || [];
                 }
             });
@@ -1994,6 +2096,24 @@ export class Gantt implements IVisual {
         return drawNotRoundedRectByPath(x, y, width, height);
     }
 
+    private drawCriticalSegment(task: Task, segment: TimeCriticalSegment, taskConfigHeight: number): string {
+        if (!this.hasNotNullableDates || !segment || !isValidDate(segment.start) || !isValidDate(segment.end)) {
+            return "";
+        }
+
+        const width = Gantt.taskDurationToWidth(segment.start, segment.end);
+
+        if (width <= 0) {
+            return "";
+        }
+
+        const x = Gantt.TimeScale(segment.start);
+        const y = Gantt.getBarYCoordinate(task.index, taskConfigHeight) + (task.index + 1) * this.getResourceLabelTopMargin();
+        const height = Gantt.getBarHeight(taskConfigHeight);
+
+        return drawNotRoundedRectByPath(x, y, width, height);
+    }
+
     /**
      * Render task progress rect
      * @param taskSelection Task Selection
@@ -2003,6 +2123,9 @@ export class Gantt implements IVisual {
         taskSelection: Selection<Task>,
         taskConfigHeight: number): void {
         const highContrastModeTaskRectStroke: number = 1;
+        const signalColorSetting = this.viewModel?.settings?.taskConfigCardSettings?.criticalFill?.value?.value
+            || Gantt.DefaultValues.SignalColor;
+        const resolvedSignalColor = this.colorHelper.getHighContrastColor("foreground", signalColorSetting);
 
         const taskRect: Selection<Task> = taskSelection
             .selectAll(Gantt.TaskRect.selectorName)
@@ -2030,6 +2153,35 @@ export class Gantt implements IVisual {
                 .style("stroke", (task: Task) => this.colorHelper.getHighContrastColor("foreground", task.color))
                 .style("stroke-width", highContrastModeTaskRectStroke);
         }
+
+        const criticalRectSelection: Selection<{ segment: TimeCriticalSegment; task: Task }, Task> = taskSelection
+            .selectAll(".task-rect-critical")
+            .data((task: Task) => (task.timeCriticalSegments || []).map((segment: TimeCriticalSegment) => ({ segment, task })));
+
+        const criticalRectMerged: Selection<{ segment: TimeCriticalSegment; task: Task }, Task> = criticalRectSelection
+            .enter()
+            .append("path")
+            .merge(criticalRectSelection);
+
+        criticalRectMerged
+            .classed("task-rect-critical", true)
+            .attr("d", (data: { segment: TimeCriticalSegment; task: Task }) =>
+                this.drawCriticalSegment(data.task, data.segment, taskConfigHeight))
+            .style("fill", resolvedSignalColor);
+
+        if (this.colorHelper.isHighContrast) {
+            criticalRectMerged
+                .style("stroke", resolvedSignalColor)
+                .style("stroke-width", highContrastModeTaskRectStroke);
+        } else {
+            criticalRectMerged
+                .style("stroke", null)
+                .style("stroke-width", null);
+        }
+
+        criticalRectSelection
+            .exit()
+            .remove();
 
         taskRect
             .exit()
@@ -2116,7 +2268,10 @@ export class Gantt implements IVisual {
         taskMilestonesMerged.classed(Gantt.TaskMilestone.className, true);
 
         const transformForMilestone = (id: number, start: Date) => {
-            return SVGManipulations.translate(Gantt.TimeScale(start) - Gantt.getBarHeight(taskConfigHeight) / 4, Gantt.getBarYCoordinate(id, taskConfigHeight) + (id + 1) * this.getResourceLabelTopMargin());
+            return SVGManipulations.translate(
+                Gantt.TimeScale(start) - Gantt.getBarHeight(taskConfigHeight) / 4,
+                Gantt.getBarYCoordinate(id, taskConfigHeight) + (id + 1) * this.getResourceLabelTopMargin()
+            );
         };
 
         const taskMilestonesSelection = taskMilestonesMerged.selectAll("path");
@@ -2174,6 +2329,14 @@ export class Gantt implements IVisual {
                 "foreground",
                 this.viewModel.settings.milestonesCardSettings.labelColor.value.value || Gantt.DefaultValues.TaskColor
             ));
+
+        taskMilestonesMerged.each(function () {
+            const element = this as SVGGElement;
+            const parentNode = element.parentNode;
+            if (parentNode && parentNode.lastChild !== element) {
+                parentNode.appendChild(element);
+            }
+        });
 
         this.renderTooltip(taskMilestonesSelectionMerged);
     }

@@ -102,6 +102,7 @@ export class GanttColumns<T> {
     public Parent: T = null;
     public StartDate: T = null;
     public EndDate: T = null;
+    public IsCritical: T = null;
     public Resource: T = null;
     public ExtraInformation: T = null;
     public Milestones: T = null;

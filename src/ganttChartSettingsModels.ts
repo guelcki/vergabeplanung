@@ -245,6 +245,12 @@ export class TooltipConfigCardSettings extends Card {
 
 export class TaskConfigCardSettings extends Card {
 
+    criticalFill = new formattingSettings.ColorPicker({
+        name: "criticalFill",
+        displayName: "Farbe terminkritisch",
+        value: { value: "#FF341D" }
+    });
+
     fill = new formattingSettings.ColorPicker({
         name: "fill",
         displayNameKey: "Visual_TaskSettings_Color",
@@ -267,7 +273,7 @@ export class TaskConfigCardSettings extends Card {
 
     name: string = "taskConfig";
     displayNameKey: string = "Visual_TaskSettings";
-    slices = [this.fill, this.height];
+    slices = [this.fill, this.criticalFill, this.height];
 }
 
 export class TaskResourceCardSettings extends Card {

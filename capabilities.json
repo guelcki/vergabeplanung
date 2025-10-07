@@ -26,6 +26,11 @@
             "kind": "Measure"
         },
         {
+            "name": "IsCritical",
+            "displayName": "Terminkritisch?",
+            "kind": "Grouping"
+        },
+        {
             "name": "Resource",
             "displayName": "Resource",
             "displayNameKey": "Role_Resource",
@@ -58,6 +63,10 @@
                         "min": 0,
                         "max": 1
                     },
+                    "IsCritical": {
+                        "min": 0,
+                        "max": 1
+                    },
                     "Resource": {
                         "min": 0,
                         "max": 0
@@ -88,6 +97,10 @@
                         "min": 0,
                         "max": 0
                     },
+                    "IsCritical": {
+                        "min": 0,
+                        "max": 1
+                    },
                     "Resource": {
                         "min": 0,
                         "max": 0
@@ -118,6 +131,10 @@
                         "min": 0,
                         "max": 1
                     },
+                    "IsCritical": {
+                        "min": 0,
+                        "max": 1
+                    },
                     "Resource": {
                         "min": 0,
                         "max": 1
@@ -147,6 +164,10 @@
                     "EndDate": {
                         "min": 0,
                         "max": 0
+                    },
+                    "IsCritical": {
+                        "min": 0,
+                        "max": 1
                     },
                     "Resource": {
                         "min": 0,
@@ -180,16 +201,21 @@
                                 "in": "StartDate"
                             }
                         },
-                        {
-                            "for": {
-                                "in": "Milestones"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "Resource"
-                            }
-                        },
+        {
+            "for": {
+                "in": "Milestones"
+            }
+        },
+        {
+            "for": {
+                "in": "IsCritical"
+            }
+        },
+        {
+            "for": {
+                "in": "Resource"
+            }
+        },
                         {
                             "for": {
                                 "in": "ExtraInformation"
@@ -331,6 +357,15 @@
         },
         "taskConfig": {
             "properties": {
+                "criticalFill": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
                 "fill": {
                     "type": {
                         "fill": {
