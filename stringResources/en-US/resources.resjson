@@ -43,7 +43,7 @@
 	"Visual_DataLabels": "Data Labels",
 	"Visual_CategoryLabels": "Category Labels",
 	"Visual_Type": "Type",
-	"Visual_DateType": "Date type",
+	"Visual_DateType": "Zeitachse",
 	"Visual_DateType_Second": "Second",
 	"Visual_DateType_Minute": "Minute",
 	"Visual_DateType_Hour": "Hour",

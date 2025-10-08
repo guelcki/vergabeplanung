@@ -282,6 +282,83 @@ describe("Gantt", () => {
             });
         });
 
+        it("Verify tooltips include contract awarded information", (done) => {
+            dataView = defaultDataViewBuilder.getDataView([
+                VisualData.ColumnType,
+                VisualData.ColumnTask,
+                VisualData.ColumnStartDate,
+                VisualData.ColumnEndDate,
+                VisualData.ColumnVergabeAn]);
+
+            fixDataViewDateValuesAggregation(dataView);
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const tasks = d3Select(visualBuilder.element).selectAll(".task").data() as Task[];
+
+                tasks.forEach((task, index) => {
+                    expect(task.contractAwarded).toEqual(defaultDataViewBuilder.valuesVergabeAn[index]);
+
+                    const tooltipEntry = task.tooltipInfo.find(info => info.displayName === VisualData.ColumnVergabeAn);
+                    if (defaultDataViewBuilder.valuesVergabeAn[index]) {
+                        expect(tooltipEntry).toBeDefined();
+                        expect(tooltipEntry?.value).toEqual(defaultDataViewBuilder.valuesVergabeAn[index]);
+                    }
+                });
+
+                done();
+            });
+        });
+
+        it("renders today line when today color is configured", (done) => {
+            const currentDate = new Date();
+            const todayStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+
+            defaultDataViewBuilder.valuesStartDate[0] = todayStart;
+            defaultDataViewBuilder.valuesEndDate[0] = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+            dataView = defaultDataViewBuilder.getDataView([
+                VisualData.ColumnType,
+                VisualData.ColumnTask,
+                VisualData.ColumnStartDate,
+                VisualData.ColumnEndDate]);
+
+            fixDataViewDateValuesAggregation(dataView);
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const todayLines = visualBuilder.mainElement.querySelectorAll("line.today-line");
+                expect(todayLines.length).toBeGreaterThan(0);
+                done();
+            });
+        });
+
+        it("hides today line when no color is selected", (done) => {
+            const currentDate = new Date();
+            const todayStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+
+            defaultDataViewBuilder.valuesStartDate[0] = todayStart;
+            defaultDataViewBuilder.valuesEndDate[0] = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+            dataView = defaultDataViewBuilder.getDataView([
+                VisualData.ColumnType,
+                VisualData.ColumnTask,
+                VisualData.ColumnStartDate,
+                VisualData.ColumnEndDate]);
+
+            dataView.metadata = dataView.metadata || {};
+            dataView.metadata.objects = dataView.metadata.objects || {};
+            dataView.metadata.objects.dateType = Object.assign({}, dataView.metadata.objects.dateType, {
+                todayColor: { solid: { color: null } }
+            });
+
+            fixDataViewDateValuesAggregation(dataView);
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const todayLines = visualBuilder.mainElement.querySelectorAll("line.today-line");
+                expect(todayLines.length).toBe(0);
+                done();
+            });
+        });
+
         it("Verify tooltips have only string values", (done) => {
             const randomNumber = 134223;
 

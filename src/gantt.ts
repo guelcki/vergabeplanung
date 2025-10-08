@@ -198,6 +198,7 @@ export class Gantt implements IVisual {
     private static TaskTopLine: ClassAndSelector = createClassAndSelector("task-top-line");
     private static CollapseAll: ClassAndSelector = createClassAndSelector("collapse-all");
     private static CollapseAllArrow: ClassAndSelector = createClassAndSelector("collapse-all-arrow");
+    private static TodayLine: ClassAndSelector = createClassAndSelector("today-line");
     private static Label: ClassAndSelector = createClassAndSelector("label");
     private static ClickableArea: ClassAndSelector = createClassAndSelector("clickableArea");
 
@@ -333,6 +334,7 @@ export class Gantt implements IVisual {
     private groupLabelSize: number = 25;
     private secondExpandAllIconOffset: number = 7;
     private hasNotNullableDates: boolean = false;
+    private todayLineHasConfiguredColor: boolean = false;
 
     private collapsedTasksUpdateIDs: string[] = [];
 
@@ -987,6 +989,14 @@ export class Gantt implements IVisual {
         const resource: string = (values.Resource && values.Resource[index] as string) || "";
         const taskParentName: string = (values.Parent && values.Parent[index] as string) || null;
         const milestoneRaw: PrimitiveValue = values.Milestones ? values.Milestones[index] : null;
+        const contractAwardedValue: PrimitiveValue = values.ContractAwarded ? values.ContractAwarded[index] : null;
+        let contractAwarded: string = null;
+        if (contractAwardedValue !== null && contractAwardedValue !== undefined) {
+            const contractAwardedText = String(contractAwardedValue).trim();
+            if (contractAwardedText.length) {
+                contractAwarded = contractAwardedText;
+            }
+        }
 
         const startDateValue: PrimitiveValue = values.StartDate ? values.StartDate[index] : null;
         const startDate: Date = Gantt.parseDateValue(startDateValue) || new Date(Date.now());
@@ -999,6 +1009,12 @@ export class Gantt implements IVisual {
         const milestoneOriginalDate = Gantt.parseDateValue(milestoneRaw);
 
         const extraInformation: ExtraInformation[] = this.getExtraInformationFromValues(values, index);
+        if (contractAwarded && !extraInformation.some(info => info.displayName === "Vergabe an?")) {
+            extraInformation.push({
+                displayName: "Vergabe an?",
+                value: contractAwarded
+            });
+        }
 
         let highlight: number = null;
         if (hasHighlights && categoricalValues) {
@@ -1022,6 +1038,7 @@ export class Gantt implements IVisual {
         const task: Task = {
             color,
             resource,
+            contractAwarded,
             isTimeCritical,
             timeCriticalSegments,
             index: null,
@@ -1115,6 +1132,7 @@ export class Gantt implements IVisual {
                 name: taskParentName,
                 start: null,
                 resource: null,
+                contractAwarded: null,
                 isTimeCritical: false,
                 timeCriticalSegments: [],
                 end: null,
@@ -1252,14 +1270,43 @@ export class Gantt implements IVisual {
         this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(GanttChartSettingsModel, dataView);
         const settings: GanttChartSettingsModel = this.formattingSettings;
 
+        const dateTypeObjects = dataView.metadata?.objects?.dateType;
+        let todayColorHasValue = false;
+        settings.dateTypeCardSettings.todayColor.value.value = "";
+
+        if (dateTypeObjects && Object.prototype.hasOwnProperty.call(dateTypeObjects, "todayColor")) {
+            const todayColorObject = dateTypeObjects.todayColor as { solid?: { color?: string } } | null | undefined;
+            const solidColor = todayColorObject?.solid?.color;
+            if (typeof solidColor === "string") {
+                const sanitizedColor = solidColor.trim();
+                if (sanitizedColor.length > 0 && sanitizedColor !== "#00000000") {
+                    settings.dateTypeCardSettings.todayColor.value.value = sanitizedColor;
+                    todayColorHasValue = true;
+                }
+            }
+        }
+
+        settings.dateTypeCardSettings.todayColorHasValue = todayColorHasValue;
+        this.todayLineHasConfiguredColor = todayColorHasValue;
+
         if (!colorHelper) {
             return settings;
         }
 
         if (colorHelper.isHighContrast) {
-            settings.dateTypeCardSettings.axisColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.axisColor.value.value);
-            settings.dateTypeCardSettings.axisTextColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.axisColor.value.value);
-            settings.dateTypeCardSettings.todayColor.value.value = colorHelper.getHighContrastColor("foreground", settings.dateTypeCardSettings.todayColor.value.value);
+            const axisColor = settings.dateTypeCardSettings.axisColor.value.value;
+            const axisTextColor = settings.dateTypeCardSettings.axisTextColor.value.value;
+            const todayColor = settings.dateTypeCardSettings.todayColor.value.value;
+
+            settings.dateTypeCardSettings.axisColor.value.value = axisColor
+                ? colorHelper.getHighContrastColor("foreground", axisColor)
+                : axisColor;
+            settings.dateTypeCardSettings.axisTextColor.value.value = axisTextColor
+                ? colorHelper.getHighContrastColor("foreground", axisTextColor)
+                : axisTextColor;
+            if (settings.dateTypeCardSettings.todayColorHasValue && todayColor) {
+                settings.dateTypeCardSettings.todayColor.value.value = colorHelper.getHighContrastColor("foreground", todayColor);
+            }
 
             settings.taskConfigCardSettings.criticalFill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskConfigCardSettings.criticalFill.value.value);
             settings.taskConfigCardSettings.fill.value.value = colorHelper.getHighContrastColor("foreground", settings.taskConfigCardSettings.fill.value.value);
@@ -1420,6 +1467,7 @@ export class Gantt implements IVisual {
         this.setDimension(groupedTasks, axisLength, settings);
 
         this.renderTasks(groupedTasks);
+        this.renderTodayLine(groupedTasks);
         this.updateTaskLabels(groupedTasks, settings.taskLabelsCardSettings.width.value);
         this.updateElementsPositions(this.margin);
 
@@ -1984,6 +2032,82 @@ export class Gantt implements IVisual {
         this.taskResourceRender(taskSelection, taskConfigHeight);
 
         this.renderTooltip(taskSelection);
+    }
+
+    private renderTodayLine(groupedTasks: GroupedTask[]): void {
+        type TodayLineData = { position: number; height: number; color: string };
+
+        const timeScale = Gantt.TimeScale as timeScale<Date, number>;
+        const dateTypeSettings = this.viewModel.settings.dateTypeCardSettings;
+        const trimmedColor = (dateTypeSettings.todayColor.value.value || "").trim();
+
+        const hasValidColor: boolean =
+            this.hasNotNullableDates &&
+            dateTypeSettings.todayColorHasValue &&
+            trimmedColor.length > 0 &&
+            typeof timeScale === "function";
+
+        const todayLineSelection = this.chartGroup
+            .selectAll<SVGLineElement, TodayLineData>(Gantt.TodayLine.selectorName);
+
+        if (!hasValidColor) {
+            todayLineSelection.remove();
+            return;
+        }
+
+        const domain = typeof timeScale?.domain === "function" ? timeScale.domain() as Date[] : [];
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (domain.length >= 2) {
+            const domainStart = domain[0];
+            const domainEnd = domain[domain.length - 1];
+            if (domainStart && domainEnd && (today < domainStart || today > domainEnd)) {
+                todayLineSelection.remove();
+                return;
+            }
+        }
+
+        const position = timeScale(today);
+        if (!Number.isFinite(position)) {
+            todayLineSelection.remove();
+            return;
+        }
+
+        const taskAreaHeight = this.getTaskAreaHeight(groupedTasks);
+        if (taskAreaHeight <= 0) {
+            todayLineSelection.remove();
+            return;
+        }
+
+        const resolvedColor = this.colorHelper.getHighContrastColor("foreground", trimmedColor);
+        const todayLineData: TodayLineData[] = [{
+            position,
+            height: taskAreaHeight,
+            color: resolvedColor
+        }];
+
+        const todayLineDataSelection = todayLineSelection.data(todayLineData);
+
+        todayLineDataSelection
+            .exit()
+            .remove();
+
+        const todayLineMerged = todayLineDataSelection
+            .enter()
+            .append("line")
+            .merge(todayLineDataSelection);
+
+        todayLineMerged
+            .classed(Gantt.TodayLine.className, true)
+            .attr("x1", (data: TodayLineData) => data.position)
+            .attr("x2", (data: TodayLineData) => data.position)
+            .attr("y1", 0)
+            .attr("y2", (data: TodayLineData) => data.height)
+            .style("stroke", (data: TodayLineData) => data.color)
+            .style("stroke-width", 1)
+            .style("pointer-events", "none")
+            .style("shape-rendering", "crispEdges");
     }
 
 
@@ -2607,7 +2731,7 @@ export class Gantt implements IVisual {
         tasks: GroupedTask[],
         timestamp: number = Date.now(),
         milestoneTitle?: string): void {
-        if (!this.hasNotNullableDates) {
+        if (!this.hasNotNullableDates || !this.todayLineHasConfiguredColor) {
             return;
         }
 
@@ -2708,6 +2832,21 @@ export class Gantt implements IVisual {
             .attr("transform", SVGManipulations.translate(translateXValue, 0));
         this.collapseAllGroup
             .attr("transform", SVGManipulations.translate(0, margin.top / 4 + Gantt.AxisTopMargin));
+    }
+
+    private getTaskAreaHeight(groupedTasks: GroupedTask[]): number {
+        if (!groupedTasks || !groupedTasks.length) {
+            return 0;
+        }
+
+        const taskConfigHeight: number = this.viewModel.settings.taskConfigCardSettings.height.value || DefaultChartLineHeight;
+        const resourceMargin: number = this.getResourceLabelTopMargin();
+        const lastIndex: number = groupedTasks.length - 1;
+
+        const baseY: number = Gantt.getBarYCoordinate(lastIndex, taskConfigHeight)
+            + (lastIndex + 1) * resourceMargin;
+
+        return baseY + Gantt.getBarHeight(taskConfigHeight);
     }
 
     private getMilestoneLineLength(numOfTasks: number): number {

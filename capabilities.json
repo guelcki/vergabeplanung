@@ -31,6 +31,11 @@
             "kind": "Grouping"
         },
         {
+            "name": "ContractAwarded",
+            "displayName": "Vergabe an?",
+            "kind": "Grouping"
+        },
+        {
             "name": "Resource",
             "displayName": "Resource",
             "displayNameKey": "Role_Resource",
@@ -67,6 +72,10 @@
                         "min": 0,
                         "max": 1
                     },
+                    "ContractAwarded": {
+                        "min": 0,
+                        "max": 1
+                    },
                     "Resource": {
                         "min": 0,
                         "max": 0
@@ -101,6 +110,10 @@
                         "min": 0,
                         "max": 1
                     },
+                    "ContractAwarded": {
+                        "min": 0,
+                        "max": 1
+                    },
                     "Resource": {
                         "min": 0,
                         "max": 0
@@ -135,6 +148,10 @@
                         "min": 0,
                         "max": 1
                     },
+                    "ContractAwarded": {
+                        "min": 0,
+                        "max": 1
+                    },
                     "Resource": {
                         "min": 0,
                         "max": 1
@@ -166,6 +183,10 @@
                         "max": 0
                     },
                     "IsCritical": {
+                        "min": 0,
+                        "max": 1
+                    },
+                    "ContractAwarded": {
                         "min": 0,
                         "max": 1
                     },
@@ -209,6 +230,11 @@
         {
             "for": {
                 "in": "IsCritical"
+            }
+        },
+        {
+            "for": {
+                "in": "ContractAwarded"
             }
         },
         {

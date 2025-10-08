@@ -48,6 +48,7 @@ export class VisualData extends TestDataViewBuilder {
     public static ColumnParent: string = "Parent";
     public static ColumnExtraInformationDates: string = "DescriptionDates";
     public static ColumnMilestones: string = "Milestone";
+    public static ColumnVergabeAn: string = "Vergabe an?";
 
     public valuesTaskTypeResource: string[][] = [
         ["Spec", "MOLAP connectivity", "Mey"],
@@ -82,6 +83,7 @@ export class VisualData extends TestDataViewBuilder {
         new Date(start.getTime() + this.valuesSpanInDays[idx] * 24 * 60 * 60 * 1000));
     public valuesExtraInformation = VisualData.getTexts(this.valuesTaskTypeResource, "Description");
     public valuesExtraInformationDates = VisualData.getRandomUniqueDates(this.valuesTaskTypeResource.length, new Date(2015, 7, 0), new Date(2017, 7, 0));
+    public valuesVergabeAn = this.valuesTaskTypeResource.map((_, index) => index % 2 === 0 ? "Ja" : "Nein");
 
     public static getTexts(valuesTaskTypeResource: string[][], text: string): string[] {
         return valuesTaskTypeResource.map((item) => {
@@ -175,6 +177,14 @@ export class VisualData extends TestDataViewBuilder {
                     roles: {[GanttRole.ExtraInformation]: true}
                 },
                 values: this.valuesExtraInformationDates
+            },
+            {
+                source: {
+                    displayName: VisualData.ColumnVergabeAn,
+                    type: ValueType.fromDescriptor({text: true}),
+                    roles: {[GanttRole.ContractAwarded]: true}
+                },
+                values: this.valuesVergabeAn
             },
             {
                 source: {

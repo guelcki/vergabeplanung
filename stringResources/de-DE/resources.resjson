@@ -43,7 +43,7 @@
   "Visual_DataLabels": "Datenbeschriftungen",
   "Visual_CategoryLabels": "Kategoriebeschriftungen",
   "Visual_Type": "Typ",
-  "Visual_DateType": "Datumstyp",
+	"Visual_DateType": "Zeitachse",
   "Visual_DateType_Second": "Sekunde",
   "Visual_DateType_Minute": "Minute",
   "Visual_DateType_Hour": "Stunde",

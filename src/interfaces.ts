@@ -58,6 +58,7 @@ export interface Task extends SelectableDataPoint {
     name: string;
     start: Date;
     resource: string;
+    contractAwarded: string;
     isTimeCritical: boolean;
     timeCriticalSegments: TimeCriticalSegment[];
     end: Date;

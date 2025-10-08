@@ -339,7 +339,8 @@ export class DateTypeCardSettings extends Card {
     todayColor = new formattingSettings.ColorPicker({
         name: "todayColor",
         displayNameKey: "Visual_DateType_TodayColor",
-        value: { value: "#000000" }
+        value: { value: "#000000" },
+        isNoFillItemSupported: true
     });
 
     axisColor = new formattingSettings.ColorPicker({
@@ -357,6 +358,7 @@ export class DateTypeCardSettings extends Card {
     name: string = "dateType";
     displayNameKey: string = "Visual_DateType";
     slices = [this.type, this.todayColor, this.axisColor, this.axisTextColor];
+    public todayColorHasValue: boolean = false;
 }
 
 export class GanttChartSettingsModel extends Model { 

@@ -32,6 +32,7 @@ export enum GanttRole {
     StartDate = "StartDate",
     EndDate = "EndDate",
     IsCritical = "IsCritical",
+    ContractAwarded = "ContractAwarded",
     Resource = "Resource",
     Milestones = "Milestones",
     ExtraInformation = "ExtraInformation",
