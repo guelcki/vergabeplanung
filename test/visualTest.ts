@@ -359,6 +359,35 @@ describe("Gantt", () => {
             });
         });
 
+        it("hides today line when toggle disabled", (done) => {
+            const currentDate = new Date();
+            const todayStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+
+            defaultDataViewBuilder.valuesStartDate[0] = todayStart;
+            defaultDataViewBuilder.valuesEndDate[0] = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+            dataView = defaultDataViewBuilder.getDataView([
+                VisualData.ColumnType,
+                VisualData.ColumnTask,
+                VisualData.ColumnStartDate,
+                VisualData.ColumnEndDate]);
+
+            dataView.metadata = dataView.metadata || {};
+            dataView.metadata.objects = dataView.metadata.objects || {};
+            dataView.metadata.objects.dateType = Object.assign({}, dataView.metadata.objects.dateType, {
+                todayLineVisible: false,
+                todayColor: VisualBuilder.getSolidColorStructuralObject("#000000")
+            });
+
+            fixDataViewDateValuesAggregation(dataView);
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const todayLines = visualBuilder.mainElement.querySelectorAll("line.today-line");
+                expect(todayLines.length).toBe(0);
+                done();
+            });
+        });
+
         it("Verify tooltips have only string values", (done) => {
             const randomNumber = 134223;
 

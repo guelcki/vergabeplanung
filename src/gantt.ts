@@ -1271,8 +1271,11 @@ export class Gantt implements IVisual {
         const settings: GanttChartSettingsModel = this.formattingSettings;
 
         const dateTypeObjects = dataView.metadata?.objects?.dateType;
-        let todayColorHasValue = false;
-        settings.dateTypeCardSettings.todayColor.value.value = "";
+        let todayColorHasValue = true;
+        let todayLineVisible = settings.dateTypeCardSettings.todayLineVisible.value;
+        let todayLineVisibilityExplicitlySet = false;
+
+        settings.dateTypeCardSettings.todayColor.value.value = "#000000";
 
         if (dateTypeObjects && Object.prototype.hasOwnProperty.call(dateTypeObjects, "todayColor")) {
             const todayColorObject = dateTypeObjects.todayColor as { solid?: { color?: string } } | null | undefined;
@@ -1282,12 +1285,31 @@ export class Gantt implements IVisual {
                 if (sanitizedColor.length > 0 && sanitizedColor !== "#00000000") {
                     settings.dateTypeCardSettings.todayColor.value.value = sanitizedColor;
                     todayColorHasValue = true;
+                } else {
+                    settings.dateTypeCardSettings.todayColor.value.value = "";
+                    todayColorHasValue = false;
                 }
+            } else {
+                settings.dateTypeCardSettings.todayColor.value.value = "";
+                todayColorHasValue = false;
             }
         }
 
+        if (dateTypeObjects && Object.prototype.hasOwnProperty.call(dateTypeObjects, "todayLineVisible")) {
+            const todayLineVisibleObject = dateTypeObjects.todayLineVisible as boolean | null | undefined;
+            if (typeof todayLineVisibleObject === "boolean") {
+                todayLineVisible = todayLineVisibleObject;
+                todayLineVisibilityExplicitlySet = true;
+            }
+        }
+
+        if (!todayLineVisibilityExplicitlySet) {
+            todayLineVisible = todayColorHasValue;
+        }
+
         settings.dateTypeCardSettings.todayColorHasValue = todayColorHasValue;
-        this.todayLineHasConfiguredColor = todayColorHasValue;
+        settings.dateTypeCardSettings.todayLineVisible.value = todayLineVisible;
+        this.todayLineHasConfiguredColor = todayColorHasValue && todayLineVisible;
 
         if (!colorHelper) {
             return settings;
@@ -1304,7 +1326,7 @@ export class Gantt implements IVisual {
             settings.dateTypeCardSettings.axisTextColor.value.value = axisTextColor
                 ? colorHelper.getHighContrastColor("foreground", axisTextColor)
                 : axisTextColor;
-            if (settings.dateTypeCardSettings.todayColorHasValue && todayColor) {
+            if (settings.dateTypeCardSettings.todayColorHasValue && settings.dateTypeCardSettings.todayLineVisible.value && todayColor) {
                 settings.dateTypeCardSettings.todayColor.value.value = colorHelper.getHighContrastColor("foreground", todayColor);
             }
 
@@ -2040,9 +2062,11 @@ export class Gantt implements IVisual {
         const timeScale = Gantt.TimeScale as timeScale<Date, number>;
         const dateTypeSettings = this.viewModel.settings.dateTypeCardSettings;
         const trimmedColor = (dateTypeSettings.todayColor.value.value || "").trim();
+        const isTodayLineVisible = !!dateTypeSettings.todayLineVisible.value;
 
         const hasValidColor: boolean =
             this.hasNotNullableDates &&
+            isTodayLineVisible &&
             dateTypeSettings.todayColorHasValue &&
             trimmedColor.length > 0 &&
             typeof timeScale === "function";

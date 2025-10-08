@@ -336,11 +336,16 @@ export class DateTypeCardSettings extends Card {
         value: dateTypeOptions[5]
     });
 
+    todayLineVisible = new formattingSettings.ToggleSwitch({
+        name: "todayLineVisible",
+        displayNameKey: "Visual_TodayLineVisible",
+        value: true
+    });
+
     todayColor = new formattingSettings.ColorPicker({
         name: "todayColor",
         displayNameKey: "Visual_DateType_TodayColor",
-        value: { value: "#000000" },
-        isNoFillItemSupported: true
+        value: { value: "#000000" }
     });
 
     axisColor = new formattingSettings.ColorPicker({
@@ -357,7 +362,7 @@ export class DateTypeCardSettings extends Card {
 
     name: string = "dateType";
     displayNameKey: string = "Visual_DateType";
-    slices = [this.type, this.todayColor, this.axisColor, this.axisTextColor];
+    slices = [this.type, this.todayLineVisible, this.todayColor, this.axisColor, this.axisTextColor];
     public todayColorHasValue: boolean = false;
 }
 

@@ -52,6 +52,7 @@
 	"Visual_DateType_Month": "Month",
   	"Visual_DateType_Quarter": "Quarter",
 	"Visual_DateType_Year": "Year",
+	"Visual_TodayLineVisible": "Today line visible?",
 	"Visual_DateType_TodayColor": "Today Color",
 	"Visual_DateType_AxisColor": "Axis Color",
 	"Visual_DateType_AxisTextColor": "Axis Text Color",

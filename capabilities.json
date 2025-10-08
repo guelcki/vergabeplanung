@@ -455,6 +455,11 @@
                         "text": true
                     }
                 },
+                "todayLineVisible": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "todayColor": {
                     "type": {
                         "fill": {
