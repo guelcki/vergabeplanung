@@ -488,6 +488,23 @@
                     }
                 }
             }
+        },
+        "zeitachse": {
+            "displayName": "Zeitachse",
+            "properties": {
+                "vergabeVon": {
+                    "displayName": "Vergabe von",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "vergabeBis": {
+                    "displayName": "Vergabe bis",
+                    "type": {
+                        "text": true
+                    }
+                }
+            }
         }
     },
     "sorting": {

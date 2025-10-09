@@ -111,6 +111,10 @@ import {TextProperties} from "powerbi-visuals-utils-formattingutils/lib/src/inte
 
 import {FormattingSettingsService} from "powerbi-visuals-utils-formattingmodel";
 import {DateTypeCardSettings, GanttChartSettingsModel} from "./ganttChartSettingsModels";
+import {
+    TimelineFormattingSettingsModel,
+    formattingSettingsService as timelineFormattingSettingsService
+} from "./settings";
 import {DateType, GanttRole, LabelForDate, MilestoneShape, ResourceLabelPosition} from "./enums";
 
 // d3
@@ -304,6 +308,9 @@ export class Gantt implements IVisual {
 
     private formattingSettings: GanttChartSettingsModel;
     private formattingSettingsService: FormattingSettingsService;
+    private timelineSettings: TimelineFormattingSettingsModel;
+    private timelineStart: Date | null = null;
+    private timelineEnd: Date | null = null;
 
     private hasHighlights: boolean;
 
@@ -346,6 +353,8 @@ export class Gantt implements IVisual {
         this.host = options.host;
         this.localizationManager = this.host.createLocalizationManager();
         this.formattingSettingsService = new FormattingSettingsService(this.localizationManager);
+        this.timelineSettings = new TimelineFormattingSettingsModel();
+        this.ensureValidTimeline();
         this.colors = options.host.colorPalette;
         this.colorHelper = new ColorHelper(this.colors);
         this.body = d3Select(options.element);
@@ -1372,6 +1381,27 @@ export class Gantt implements IVisual {
             return;
         }
 
+        this.timelineSettings =
+            timelineFormattingSettingsService.populateFormattingSettingsModel(
+                TimelineFormattingSettingsModel,
+                options.dataViews[0]
+            );
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (!this.timelineSettings.zeitachse.vergabeVon.value) {
+            this.timelineSettings.zeitachse.vergabeVon.value = new Date(today);
+        }
+
+        if (!this.timelineSettings.zeitachse.vergabeBis.value) {
+            const bis = new Date(today);
+            bis.setMonth(bis.getMonth() + 6);
+            this.timelineSettings.zeitachse.vergabeBis.value = bis;
+        }
+
+        this.ensureValidTimeline();
+
         const collapsedTasksUpdateId: any = options.dataViews[0].metadata?.objects?.collapsedTasksUpdateId?.value;
 
         if (this.collapsedTasksUpdateIDs.includes(collapsedTasksUpdateId)) {
@@ -1380,6 +1410,69 @@ export class Gantt implements IVisual {
         }
 
         this.updateInternal(options);
+    }
+
+    private ensureValidTimeline(): void {
+        if (!this.timelineSettings) {
+            return;
+        }
+
+        const timeline = this.timelineSettings.zeitachse;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const vergabeVon = this.parseTimelineDate(timeline.vergabeVon.value) ?? today;
+
+        let vergabeBis = this.parseTimelineDate(timeline.vergabeBis.value);
+        if (!vergabeBis || vergabeBis < vergabeVon) {
+            vergabeBis = new Date(vergabeVon);
+            vergabeBis.setMonth(vergabeBis.getMonth() + 6);
+        }
+
+        timeline.vergabeVon.value = vergabeVon;
+        timeline.vergabeBis.value = vergabeBis;
+
+        this.timelineStart = new Date(vergabeVon);
+        this.timelineEnd = new Date(vergabeBis);
+    }
+
+    private parseTimelineDate(value: unknown): Date | null {
+        if (!value) {
+            return null;
+        }
+
+        let parsed: Date;
+        if (value instanceof Date) {
+            parsed = new Date(value.getTime());
+        } else if (typeof value === "string" || typeof value === "number") {
+            parsed = new Date(value);
+        } else {
+            return null;
+        }
+
+        if (isNaN(parsed.getTime())) {
+            return null;
+        }
+
+        parsed.setHours(0, 0, 0, 0);
+
+        return parsed;
+    }
+
+    private isTaskWithinTimeline(task: Task): boolean {
+        if (!this.timelineStart || !this.timelineEnd) {
+            return true;
+        }
+
+        if (!task || !task.start || !task.end) {
+            return true;
+        }
+
+        if (!isValidDate(task.start) || !isValidDate(task.end)) {
+            return true;
+        }
+
+        return task.end >= this.timelineStart && task.start <= this.timelineEnd;
     }
 
     private updateInternal(options: VisualUpdateOptions) : void {
@@ -1422,7 +1515,8 @@ export class Gantt implements IVisual {
         this.updateChartSize();
 
         const visibleTasks = this.viewModel.tasks
-            .filter((task: Task) => task.visibility);
+            .filter((task: Task) => task.visibility)
+            .filter((task: Task) => this.isTaskWithinTimeline(task));
         const tasks: Task[] = visibleTasks
             .map((task: Task, i: number) => {
                 task.index = i;
@@ -1458,8 +1552,8 @@ export class Gantt implements IVisual {
 
         let axisLength: number = 0;
         if (this.hasNotNullableDates) {
-            const startDate: Date = minDateTask.start;
-            let endDate: Date = maxDateTask.end;
+            const startDate: Date = this.timelineStart ? new Date(this.timelineStart) : minDateTask.start;
+            let endDate: Date = this.timelineEnd ? new Date(this.timelineEnd) : maxDateTask.end;
 
             if (startDate.toString() === endDate.toString()) {
                 endDate = new Date(endDate.valueOf() + (24 * 60 * 60 * 1000));
@@ -2880,7 +2974,19 @@ export class Gantt implements IVisual {
     public getFormattingModel(): powerbi.visuals.FormattingModel {
         this.filterSettingsCards();
         this.formattingSettings.setLocalizedOptions(this.localizationManager);
-        return this.formattingSettingsService.buildFormattingModel(this.formattingSettings);
+        const baseModel = this.formattingSettingsService.buildFormattingModel(this.formattingSettings);
+        const timelineModel = this.timelineSettings
+            ? timelineFormattingSettingsService.buildFormattingModel(this.timelineSettings)
+            : null;
+
+        if (timelineModel?.cards?.length) {
+            baseModel.cards = [
+                ...timelineModel.cards,
+                ...(baseModel.cards ?? [])
+            ];
+        }
+
+        return baseModel;
     }
 
     public filterSettingsCards() {
