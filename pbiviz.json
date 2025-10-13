@@ -9,7 +9,7 @@
     "supportUrl": "https://community.powerbi.com",
     "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-gantt"
   },
-  "apiVersion": "5.4.0",
+  "apiVersion": "5.9.1",
   "author": {
     "name": "Timo Gülck",
     "email": "vergabeplanung@beispiel.de"
