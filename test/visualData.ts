@@ -48,7 +48,7 @@ export class VisualData extends TestDataViewBuilder {
     public static ColumnParent: string = "Parent";
     public static ColumnExtraInformationDates: string = "DescriptionDates";
     public static ColumnMilestones: string = "Milestone";
-    public static ColumnVergabeAn: string = "Vergabe an?";
+    public static ColumnVergabeAn: string = "Vertrag geschlossen mit?";
 
     public valuesTaskTypeResource: string[][] = [
         ["Spec", "MOLAP connectivity", "Mey"],

@@ -309,8 +309,8 @@ export class Gantt implements IVisual {
     private formattingSettings: GanttChartSettingsModel;
     private formattingSettingsService: FormattingSettingsService;
     private timelineSettings: TimelineFormattingSettingsModel;
-    private timelineStart: Date | null = null;
-    private timelineEnd: Date | null = null;
+    private timelineFilterStart: Date | null = null;
+    private timelineFilterEnd: Date | null = null;
 
     private hasHighlights: boolean;
 
@@ -1018,9 +1018,9 @@ export class Gantt implements IVisual {
         const milestoneOriginalDate = Gantt.parseDateValue(milestoneRaw);
 
         const extraInformation: ExtraInformation[] = this.getExtraInformationFromValues(values, index);
-        if (contractAwarded && !extraInformation.some(info => info.displayName === "Vergabe an?")) {
+        if (contractAwarded && !extraInformation.some(info => info.displayName === "Vertrag geschlossen mit?")) {
             extraInformation.push({
-                displayName: "Vergabe an?",
+                displayName: "Vertrag geschlossen mit?",
                 value: contractAwarded
             });
         }
@@ -1432,8 +1432,8 @@ export class Gantt implements IVisual {
         timeline.vergabeVon.value = vergabeVon;
         timeline.vergabeBis.value = vergabeBis;
 
-        this.timelineStart = new Date(vergabeVon);
-        this.timelineEnd = new Date(vergabeBis);
+        this.timelineFilterStart = new Date(vergabeVon);
+        this.timelineFilterEnd = new Date(vergabeBis);
     }
 
     private parseTimelineDate(value: unknown): Date | null {
@@ -1460,19 +1460,71 @@ export class Gantt implements IVisual {
     }
 
     private isTaskWithinTimeline(task: Task): boolean {
-        if (!this.timelineStart || !this.timelineEnd) {
+        if (!task) {
+            return false;
+        }
+
+        if (task.children && task.children.length) {
+            return task.children.some(child => this.isTaskWithinTimeline(child));
+        }
+
+        const milestones = task.Milestones
+            ?.map(milestone => milestone?.start)
+            .filter((date): date is Date => !!date && isValidDate(date));
+
+        if (!milestones || !milestones.length) {
+            return false;
+        }
+
+        if (!this.timelineFilterEnd) {
             return true;
         }
 
-        if (!task || !task.start || !task.end) {
-            return true;
-        }
+        const filterEnd = this.timelineFilterEnd.getTime();
 
-        if (!isValidDate(task.start) || !isValidDate(task.end)) {
-            return true;
-        }
+        return milestones.some(milestone => milestone.getTime() <= filterEnd);
+    }
 
-        return task.end >= this.timelineStart && task.start <= this.timelineEnd;
+    private getMilestoneDatesForAxis(tasks: Task[]): Date[] {
+        return tasks
+            .flatMap(task => task?.Milestones ?? [])
+            .map(milestone => milestone?.start ?? null)
+            .filter((date): date is Date => !!date && isValidDate(date));
+    }
+
+    private getOpenTasksSet(tasks: Task[]): Set<Task> {
+        const openTasks = new Set<Task>();
+
+        const isTaskOpen = (task: Task | null | undefined, visited = new Set<Task>()): boolean => {
+            if (!task || visited.has(task)) {
+                return false;
+            }
+
+            visited.add(task);
+
+            const contractValue = typeof task.contractAwarded === "string"
+                ? task.contractAwarded.trim().toLowerCase()
+                : task.contractAwarded !== null && task.contractAwarded !== undefined
+                    ? String(task.contractAwarded).trim().toLowerCase()
+                    : "";
+
+            let isOpen = contractValue === "offen";
+
+            if (task.children && task.children.length) {
+                const hasOpenChild = task.children.some(child => isTaskOpen(child, visited));
+                isOpen = isOpen || hasOpenChild;
+            }
+
+            if (isOpen) {
+                openTasks.add(task);
+            }
+
+            return isOpen;
+        };
+
+        tasks.forEach(task => isTaskOpen(task));
+
+        return openTasks;
     }
 
     private updateInternal(options: VisualUpdateOptions) : void {
@@ -1514,7 +1566,16 @@ export class Gantt implements IVisual {
 
         this.updateChartSize();
 
+        const openTasksSet = this.getOpenTasksSet(this.viewModel.tasks);
+
+        this.viewModel.tasks.forEach(task => {
+            if (task.children && task.children.length) {
+                task.children = task.children.filter(child => openTasksSet.has(child));
+            }
+        });
+
         const visibleTasks = this.viewModel.tasks
+            .filter((task: Task) => openTasksSet.has(task))
             .filter((task: Task) => task.visibility)
             .filter((task: Task) => this.isTaskWithinTimeline(task));
         const tasks: Task[] = visibleTasks
@@ -1522,6 +1583,13 @@ export class Gantt implements IVisual {
                 task.index = i;
                 return task;
             });
+
+        const visibleTaskSet = new Set(tasks);
+        tasks.forEach(task => {
+            if (task.children && task.children.length) {
+                task.children = task.children.filter(child => visibleTaskSet.has(child));
+            }
+        });
 
         if (this.interactivityService) {
             this.interactivityService.applySelectionStateToData(tasks);
@@ -1546,17 +1614,33 @@ export class Gantt implements IVisual {
                 && isValidDate(task.start)
                 && isValidDate(task.end));
 
-        const minDateTask: Task = lodashMinBy(tasksWithDates, (t) => t && t.start);
-        const maxDateTask: Task = lodashMaxBy(tasksWithDates, (t) => t && t.end);
-        this.hasNotNullableDates = tasksWithDates.length > 0;
+        const minDateTask: Task | undefined = tasksWithDates.length ? lodashMinBy(tasksWithDates, (t) => t && t.start) : undefined;
+        const maxDateTask: Task | undefined = tasksWithDates.length ? lodashMaxBy(tasksWithDates, (t) => t && t.end) : undefined;
+
+        const milestoneDatesForAxis: Date[] = this.getMilestoneDatesForAxis(tasks);
+        const milestoneTimestamps: number[] = milestoneDatesForAxis.map(date => date.getTime());
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let earliestMilestone: Date | null = milestoneTimestamps.length
+            ? new Date(Math.min(...milestoneTimestamps))
+            : null;
+        let startDate: Date | null = earliestMilestone
+            ? new Date(Math.min(earliestMilestone.getTime(), today.getTime()))
+            : new Date(today.getTime());
+        let endDate: Date | null = maxDateTask ? new Date(maxDateTask.end) : null;
+
+        if (startDate && endDate && startDate.getTime() > endDate.getTime()) {
+            startDate = new Date(endDate);
+        }
+
+        this.hasNotNullableDates = !!(startDate && endDate);
 
         let axisLength: number = 0;
-        if (this.hasNotNullableDates) {
-            const startDate: Date = this.timelineStart ? new Date(this.timelineStart) : minDateTask.start;
-            let endDate: Date = this.timelineEnd ? new Date(this.timelineEnd) : maxDateTask.end;
-
-            if (startDate.toString() === endDate.toString()) {
-                endDate = new Date(endDate.valueOf() + (24 * 60 * 60 * 1000));
+        if (this.hasNotNullableDates && startDate && endDate) {
+            if (startDate.getTime() === endDate.getTime()) {
+                endDate = new Date(endDate.valueOf() + MillisecondsInADay);
             }
 
             const dateTypeMilliseconds: number = Gantt.getDateType(DateType[settings.dateTypeCardSettings.type.value.value]);
@@ -2980,10 +3064,27 @@ export class Gantt implements IVisual {
             : null;
 
         if (timelineModel?.cards?.length) {
-            baseModel.cards = [
-                ...timelineModel.cards,
-                ...(baseModel.cards ?? [])
-            ];
+            const baseCards = baseModel.cards ? [...baseModel.cards] : [];
+            const timelineCards = [...timelineModel.cards];
+            const dateTypeCardName = this.formattingSettings.dateTypeCardSettings.name;
+            const isFormattingCard = (card: powerbi.visuals.FormattingCard | powerbi.visuals.FormattingCardPlaceholder)
+                : card is powerbi.visuals.FormattingCard => (card as powerbi.visuals.FormattingCard).uid !== undefined;
+            const dateTypeCardIndex = baseCards.findIndex(card => isFormattingCard(card) && card.uid === dateTypeCardName);
+
+            if (dateTypeCardIndex !== -1) {
+                baseModel.cards = [
+                    ...baseCards.slice(0, dateTypeCardIndex + 1),
+                    ...timelineCards,
+                    ...baseCards.slice(dateTypeCardIndex + 1)
+                ];
+            } else if (baseCards.length) {
+                baseModel.cards = [
+                    ...baseCards,
+                    ...timelineCards
+                ];
+            } else {
+                baseModel.cards = timelineCards;
+            }
         }
 
         return baseModel;

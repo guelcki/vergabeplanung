@@ -32,7 +32,7 @@
         },
         {
             "name": "ContractAwarded",
-            "displayName": "Vergabe an?",
+            "displayName": "Vertrag geschlossen mit?",
             "kind": "Grouping"
         },
         {
@@ -490,16 +490,16 @@
             }
         },
         "zeitachse": {
-            "displayName": "Zeitachse",
+            "displayName": "Zeitraum Vergabe SOLL",
             "properties": {
                 "vergabeVon": {
-                    "displayName": "Vergabe von",
+                    "displayName": "Vergabe SOLL von",
                     "type": {
                         "text": true
                     }
                 },
                 "vergabeBis": {
-                    "displayName": "Vergabe bis",
+                    "displayName": "Vergabe SOLL bis",
                     "type": {
                         "text": true
                     }

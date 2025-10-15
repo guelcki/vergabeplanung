@@ -18,20 +18,20 @@ const addMonths = (base: Date, months: number): Date => {
 export class ZeitachseSettings extends formattingSettings.SimpleCard {
     vergabeVon = new formattingSettings.DatePicker({
         name: "vergabeVon",
-        displayName: "Vergabe von",
+        displayName: "Vergabe SOLL von",
         placeholder: "",
         value: getToday()
     });
 
     vergabeBis = new formattingSettings.DatePicker({
         name: "vergabeBis",
-        displayName: "Vergabe bis",
+        displayName: "Vergabe SOLL bis",
         placeholder: "",
         value: addMonths(getToday(), 6)
     });
 
     name = "zeitachse";
-    displayName = "Zeitachse";
+    displayName = "Zeitraum Vergabe SOLL";
     slices = [this.vergabeVon, this.vergabeBis];
 }
 
